@@ -1,38 +1,79 @@
 import { db } from "@/lib/firebase/client";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import type { ParentFormData } from "@/types/profile";
+import type { ChildInput } from "@/types/auth";
 
-export async function getUserProfile(uid: string): Promise<ParentFormData> {
-  const snap = await getDoc(doc(db, "users", uid));
+/**
+ * Pobiera:
+ *  - dane rodzica z users/{uid}
+ *  - dzieci z children where parentId == uid
+ */
+export async function getUserProfile(
+  uid: string
+): Promise<ParentFormData> {
+  // --- parent ---
+  const parentSnap = await getDoc(doc(db, "users", uid));
 
-  if (!snap.exists()) {
+  if (!parentSnap.exists()) {
     throw new Error("Profil nie istnieje");
   }
 
-  const data = snap.data();
+  const parent = parentSnap.data();
+
+  // --- children ---
+  const q = query(
+    collection(db, "children"),
+    where("parentId", "==", uid)
+  );
+
+  const childrenSnap = await getDocs(q);
+
+  const children: ChildInput[] = childrenSnap.docs.map((d) => {
+    const data = d.data();
+
+    return {
+      firstName: data.firstName ?? "",
+      lastName: data.lastName ?? "",
+      ageYears: data.ageYears ?? "",
+    };
+  });
 
   return {
-    firstName: data.firstName ?? "",
-    lastName: data.lastName ?? "",
-    email: data.email ?? "",
-    phone: data.phone ?? "",
+    firstName: parent.firstName ?? "",
+    lastName: parent.lastName ?? "",
+    email: parent.email ?? "",
+    phone: parent.phone ?? "",
 
-    street: data.street ?? "",
-    houseNumber: data.houseNumber ?? "",
-    apartmentNumber: data.apartmentNumber ?? "",
-    postalCode: data.postalCode ?? "",
-    city: data.city ?? "",
+    street: parent.street ?? "",
+    houseNumber: parent.houseNumber ?? "",
+    apartmentNumber: parent.apartmentNumber ?? "",
+    postalCode: parent.postalCode ?? "",
+    city: parent.city ?? "",
 
-    children: data.children ?? [],
+    children,
   };
 }
 
+/**
+ * Aktualizuje TYLKO dane rodzica.
+ * Dzieci są zarządzane osobno w kolekcji `children`.
+ */
 export async function updateUserProfile(
   uid: string,
   data: ParentFormData
 ) {
+  const { children, ...parent } = data;
+
   await updateDoc(doc(db, "users", uid), {
-    ...data,
+    ...parent,
     updatedAt: Date.now(),
   });
 }

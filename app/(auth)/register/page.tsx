@@ -27,8 +27,11 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
 
   const [phone, setPhone] = useState("");
-  const [addressLine1, setAddressLine1] = useState("");
-  const [addressLine2, setAddressLine2] = useState("");
+
+  const [street, setStreet] = useState("");
+  const [houseNumber, setHouseNumber] = useState("");
+  const [apartmentNumber, setApartmentNumber] = useState("");
+
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
 
@@ -43,27 +46,39 @@ export default function RegisterPage() {
     if (!isEmailLike(email)) return false;
     if (password.length < 6) return false;
     if (!phone.trim()) return false;
-    if (!addressLine1.trim() || !city.trim() || !postalCode.trim()) return false;
+
+    if (
+      !street.trim() ||
+      !houseNumber.trim() ||
+      !city.trim() ||
+      !postalCode.trim()
+    )
+      return false;
 
     // Minimum 1 dziecko poprawne
-    const validKids = children.some(
+    return children.some(
       (c) =>
         c.firstName.trim() &&
         c.lastName.trim() &&
-        typeof c.ageYears !== "string" &&
-        c.ageYears > 0
+        Number(c.ageYears) > 0
     );
-
-    // ageYears jest "" lub number — więc sprawdźmy prościej:
-    const validKids2 = children.some(
-      (c) => c.firstName.trim() && c.lastName.trim() && Number(c.ageYears) > 0
-    );
-
-    return validKids || validKids2;
-  }, [firstName, lastName, email, password, phone, addressLine1, city, postalCode, children]);
+  }, [
+    firstName,
+    lastName,
+    email,
+    password,
+    phone,
+    street,
+    houseNumber,
+    city,
+    postalCode,
+    children,
+  ]);
 
   function updateChild(index: number, patch: Partial<ChildInput>) {
-    setChildren((prev) => prev.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+    setChildren((prev) =>
+      prev.map((c, i) => (i === index ? { ...c, ...patch } : c))
+    );
   }
 
   function addChild() {
@@ -87,10 +102,15 @@ export default function RegisterPage() {
 
     try {
       // 1) Firebase Auth
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const cred = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      // displayName (ładne w UI)
-      await updateProfile(cred.user, { displayName: `${firstName.trim()} ${lastName.trim()}` });
+      await updateProfile(cred.user, {
+        displayName: `${firstName.trim()} ${lastName.trim()}`,
+      });
 
       // 2) Firestore: users + children
       await createParentAndChildren({
@@ -100,10 +120,14 @@ export default function RegisterPage() {
           lastName: lastName.trim(),
           email: email.trim().toLowerCase(),
           phone: phone.trim(),
-          addressLine1: addressLine1.trim(),
-          addressLine2: addressLine2.trim() || undefined,
+
+          street: street.trim(),
+          houseNumber: houseNumber.trim(),
+          apartmentNumber: apartmentNumber.trim() || "",
+
           city: city.trim(),
           postalCode: postalCode.trim(),
+
           role: "user",
         },
         children: children.map((c) => ({
@@ -115,11 +139,15 @@ export default function RegisterPage() {
 
       router.replace("/dashboard");
     } catch (err: any) {
-      // Minimalnie, bez rozpisywania wszystkich kodów:
       const code = err?.code as string | undefined;
-      if (code === "auth/email-already-in-use") setError("Ten email jest już zajęty.");
-      else if (code === "auth/weak-password") setError("Hasło jest za słabe (min. 6 znaków).");
-      else setError(err?.message ?? "Błąd rejestracji.");
+
+      if (code === "auth/email-already-in-use") {
+        setError("Ten email jest już zajęty.");
+      } else if (code === "auth/weak-password") {
+        setError("Hasło jest za słabe (min. 6 znaków).");
+      } else {
+        setError(err?.message ?? "Błąd rejestracji.");
+      }
     } finally {
       setPending(false);
     }
@@ -137,57 +165,115 @@ export default function RegisterPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="text-sm">Imię *</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2"
-                value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+              <input
+                className="mt-1 w-full border rounded-lg px-3 py-2"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
             </div>
+
             <div>
               <label className="text-sm">Nazwisko *</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2"
-                value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+              <input
+                className="mt-1 w-full border rounded-lg px-3 py-2"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
             </div>
           </div>
 
           <div>
             <label className="text-sm">Email *</label>
-            <input className="mt-1 w-full border rounded-lg px-3 py-2"
-              value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
+            <input
+              className="mt-1 w-full border rounded-lg px-3 py-2"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              required
+            />
           </div>
 
           <div>
             <label className="text-sm">Hasło *</label>
-            <input className="mt-1 w-full border rounded-lg px-3 py-2"
-              value={password} onChange={(e) => setPassword(e.target.value)} type="password" required minLength={6} />
-            <p className="text-xs text-gray-500 mt-1">Minimum 6 znaków.</p>
+            <input
+              className="mt-1 w-full border rounded-lg px-3 py-2"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              required
+              minLength={6}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Minimum 6 znaków.
+            </p>
           </div>
 
           <div>
             <label className="text-sm">Telefon *</label>
-            <input className="mt-1 w-full border rounded-lg px-3 py-2"
-              value={phone} onChange={(e) => setPhone(e.target.value)} required />
+            <input
+              className="mt-1 w-full border rounded-lg px-3 py-2"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+            />
           </div>
 
           <div>
-            <label className="text-sm">Adres (ulica i nr) *</label>
-            <input className="mt-1 w-full border rounded-lg px-3 py-2"
-              value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} required />
+            <label className="text-sm">Ulica *</label>
+            <input
+              className="mt-1 w-full border rounded-lg px-3 py-2"
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+              required
+            />
           </div>
 
           <div>
-            <label className="text-sm">Adres c.d. (opcjonalnie)</label>
-            <input className="mt-1 w-full border rounded-lg px-3 py-2"
-              value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+            <label className="text-sm">Nr domu *</label>
+            <input
+              className="mt-1 w-full border rounded-lg px-3 py-2"
+              value={houseNumber}
+              onChange={(e) => setHouseNumber(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="text-sm">
+              Nr mieszkania (opcjonalnie)
+            </label>
+            <input
+              className="mt-1 w-full border rounded-lg px-3 py-2"
+              value={apartmentNumber}
+              onChange={(e) =>
+                setApartmentNumber(e.target.value)
+              }
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="text-sm">Miasto *</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2"
-                value={city} onChange={(e) => setCity(e.target.value)} required />
+              <input
+                className="mt-1 w-full border rounded-lg px-3 py-2"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                required
+              />
             </div>
+
             <div>
               <label className="text-sm">Kod pocztowy *</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2"
-                value={postalCode} onChange={(e) => setPostalCode(e.target.value)} required />
+              <input
+                className="mt-1 w-full border rounded-lg px-3 py-2"
+                value={postalCode}
+                onChange={(e) =>
+                  setPostalCode(e.target.value)
+                }
+                required
+              />
             </div>
           </div>
         </section>
@@ -196,6 +282,7 @@ export default function RegisterPage() {
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-medium">Dzieci</h2>
+
             <button
               type="button"
               onClick={addChild}
@@ -207,9 +294,15 @@ export default function RegisterPage() {
 
           <div className="space-y-3">
             {children.map((child, idx) => (
-              <div key={idx} className="border rounded-xl p-4 space-y-3">
+              <div
+                key={idx}
+                className="border rounded-xl p-4 space-y-3"
+              >
                 <div className="flex items-center justify-between">
-                  <p className="font-medium">Dziecko {idx + 1}</p>
+                  <p className="font-medium">
+                    Dziecko {idx + 1}
+                  </p>
+
                   {children.length > 1 && (
                     <button
                       type="button"
@@ -227,27 +320,42 @@ export default function RegisterPage() {
                     <input
                       className="mt-1 w-full border rounded-lg px-3 py-2"
                       value={child.firstName}
-                      onChange={(e) => updateChild(idx, { firstName: e.target.value })}
+                      onChange={(e) =>
+                        updateChild(idx, {
+                          firstName: e.target.value,
+                        })
+                      }
                       required={idx === 0}
                     />
                   </div>
+
                   <div>
                     <label className="text-sm">Nazwisko *</label>
                     <input
                       className="mt-1 w-full border rounded-lg px-3 py-2"
                       value={child.lastName}
-                      onChange={(e) => updateChild(idx, { lastName: e.target.value })}
+                      onChange={(e) =>
+                        updateChild(idx, {
+                          lastName: e.target.value,
+                        })
+                      }
                       required={idx === 0}
                     />
                   </div>
+
                   <div>
-                    <label className="text-sm">Wiek (lata) *</label>
+                    <label className="text-sm">
+                      Wiek (lata) *
+                    </label>
                     <input
                       className="mt-1 w-full border rounded-lg px-3 py-2"
                       value={child.ageYears}
                       onChange={(e) =>
                         updateChild(idx, {
-                          ageYears: e.target.value === "" ? "" : Number(e.target.value),
+                          ageYears:
+                            e.target.value === ""
+                              ? ""
+                              : Number(e.target.value),
                         })
                       }
                       type="number"
@@ -282,7 +390,10 @@ export default function RegisterPage() {
       </form>
 
       <p className="text-sm text-center">
-        Masz konto? <Link className="underline" href="/login">Zaloguj się</Link>
+        Masz konto?{" "}
+        <Link className="underline" href="/login">
+          Zaloguj się
+        </Link>
       </p>
     </div>
   );
