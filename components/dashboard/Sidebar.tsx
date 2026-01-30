@@ -9,11 +9,12 @@ const nav = [
   { label: "Profil", href: "/dashboard/profile" },
   { label: "Zajęcia", href: "/dashboard/classes" },
   { label: "Płatności", href: "/dashboard/payments" },
+  { label: "Dzieci", href: "/dashboard/children" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-
+  
   return (
     <aside className="w-64 border-r bg-background h-screen sticky top-0">
       <div className="p-4 font-semibold text-lg">

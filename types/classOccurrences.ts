@@ -1,4 +1,4 @@
-type ClassOccurrence = {
+export type ClassOccurrence = {
   classId: string;
   date: "2026-02-03";
   startTime: "14:00";

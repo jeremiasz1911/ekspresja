@@ -42,6 +42,8 @@ export type Class = {
   icon?: ClassIcon;
   imageUrl?: string;
 
+  capacity?: number;
+  
   isActive: boolean;
   createdAt: number;
   createdBy: string;
