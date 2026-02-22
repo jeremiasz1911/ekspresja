@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "app/(auth)/complete-profile"  ],
+, "app/(auth)/complete-profile", "scripts"  ],
   "exclude": ["node_modules"]
 }

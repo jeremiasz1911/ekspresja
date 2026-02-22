@@ -12,5 +12,6 @@ export type ParentFormData = {
   postalCode: string;
   city: string;
 
-  children: ChildInput[];
+  // 🔥 żeby móc update/delete w kolekcji children
+  children: (ChildInput & { id?: string })[];
 };

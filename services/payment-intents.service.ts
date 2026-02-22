@@ -9,13 +9,30 @@ import {
 } from "firebase/firestore";
 import type { PaymentIntent, PaymentIntentStatus } from "@/types/payment-intents";
 
-export async function createPaymentIntent(data: Omit<PaymentIntent, "id" | "status" | "createdAt">) {
-  const ref = await addDoc(collection(db, "payment_intents"), {
+function stripUndefined<T>(obj: T): T {
+  if (Array.isArray(obj)) return obj as any;
+  if (obj && typeof obj === "object") {
+    const out: any = {};
+    for (const [k, v] of Object.entries(obj as any)) {
+      if (v === undefined) continue;
+      out[k] = stripUndefined(v);
+    }
+    return out;
+  }
+  return obj;
+}
+
+export async function createPaymentIntent(
+  data: Omit<PaymentIntent, "id" | "status" | "createdAt">
+) {
+  const payload = stripUndefined({
     ...data,
     status: "created" satisfies PaymentIntentStatus,
     createdAt: Date.now(),
     createdAtServer: serverTimestamp(),
   });
+
+  const ref = await addDoc(collection(db, "payment_intents"), payload);
   return ref.id;
 }
 
@@ -30,9 +47,11 @@ export async function updatePaymentIntentStatus(
   status: PaymentIntentStatus,
   patch?: Partial<Pick<PaymentIntent, "providerTransactionId" | "paidAt">>
 ) {
-  await updateDoc(doc(db, "payment_intents", id), {
+  const payload = stripUndefined({
     status,
     ...(patch ?? {}),
     updatedAt: Date.now(),
   });
+
+  await updateDoc(doc(db, "payment_intents", id), payload);
 }

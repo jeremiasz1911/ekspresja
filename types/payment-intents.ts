@@ -11,12 +11,15 @@ export type PaymentIntent = {
   id: string;
 
   parentId: string;
+  email?: string;
+  payerName?: string;
   childId?: string; // zależy od planu
   planId: string;
-
+  
   amountCents: number;
   currency: "PLN";
-
+  description: string;
+  
   provider: PaymentProvider;
   providerTransactionId?: string;
 
@@ -25,7 +28,9 @@ export type PaymentIntent = {
   // kontekst zakupu
   metadata?: {
     classId?: string;
-    occurrenceId?: string; // dla jednorazówek
+    childId?: string;
+    occurrenceId?: string;
+    enrollNow?: boolean;
   };
 
   createdAt: number;

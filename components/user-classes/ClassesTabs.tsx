@@ -3,8 +3,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserWeekCalendar } from "@/components/user-classes/UserWeekCalendar";
 import { AvailableClassesTab } from "@/components/user-classes/AvailableClassesTab";
-// (Twoja lista "Moje zapisy" zrobimy za chwilę)
-export function ClassesTabs() {
+
+export function ClassesTabs({ refreshTick }: { refreshTick: number }) {
   return (
     <Tabs defaultValue="schedule" className="w-full">
       <TabsList>
@@ -14,7 +14,7 @@ export function ClassesTabs() {
       </TabsList>
 
       <TabsContent value="schedule">
-        <UserWeekCalendar />
+        <UserWeekCalendar refreshTick={refreshTick} />
       </TabsContent>
 
       <TabsContent value="available">

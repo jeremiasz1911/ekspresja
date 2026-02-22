@@ -2,16 +2,16 @@ export type EnrollmentStatus =
   | "pending"
   | "approved"
   | "rejected"
-  | "cancelled"
   | "canceled_by_admin";  
 
-export type EnrollmentRequestStatus =
+export type enrollment_requeststatus =
   | "pending"              // wysłane, czeka
   | "approved"             // zapisany
   | "rejected"             // odrzucone przez admina
   | "canceled_by_admin";   // anulowane przez admina
 
 export type PaymentMethod =
+  | "credits"
   | "online"
   | "cash"
   | "declaration";

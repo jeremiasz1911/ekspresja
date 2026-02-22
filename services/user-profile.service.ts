@@ -8,6 +8,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import type { ParentProfile, ChildInput } from "@/types/auth";
+import type { Child } from "@/types/child"; // <- dostosuj jeśli eksportujesz z "@/types"
 
 export type ParentProfileWithChildren = ParentProfile & {
   children: Array<
@@ -32,36 +33,36 @@ export async function doesUserProfileExist(
  *  - dane rodzica z users/{uid}
  *  - dzieci z children where parentId == uid
  */
-export async function getParentProfile(
-  uid: string
-): Promise<ParentProfileWithChildren | null> {
-  // parent
-  const parentSnap = await getDoc(doc(db, "users", uid));
-  if (!parentSnap.exists()) return null;
+export async function getParentProfile(parentId: string) {
+  // 1) users/{uid} – dane rodzica
+  const userSnap = await getDoc(doc(db, "users", parentId));
+  const userData = userSnap.exists() ? (userSnap.data() as any) : null;
 
-  const parent = parentSnap.data() as ParentProfile;
-
-  // children
-  const q = query(
-    collection(db, "children"),
-    where("parentId", "==", uid)
+  // 2) children – dzieci jako osobna kolekcja (prawdziwe źródło)
+  const kidsSnap = await getDocs(
+    query(collection(db, "children"), where("parentId", "==", parentId))
   );
 
-  const childrenSnap = await getDocs(q);
+  const children: Child[] = kidsSnap.docs
+    .map((d) => {
+      const data = d.data() as any;
 
-  const children = childrenSnap.docs.map((d) => {
-    const data = d.data();
-
-    return {
-      id: d.id,
-      firstName: data.firstName ?? "",
-      lastName: data.lastName ?? "",
-      ageYears: data.ageYears ?? "",
-    };
-  });
+      return {
+        id: d.id,
+        firstName: String(data.firstName ?? ""),
+        lastName: String(data.lastName ?? ""),
+        ageYears: Number(data.ageYears ?? 0),
+        parentId: String(data.parentId ?? parentId),
+        active: data.active !== false,
+        createdAt: Number(data.createdAt ?? Date.now()),
+      } satisfies Child;
+    })
+    .filter((c) => c.active)
+    .filter((c) => c.firstName && c.lastName && c.ageYears > 0);
 
   return {
-    ...parent,
+    id: parentId,
+    ...(userData ?? {}),
     children,
   };
 }

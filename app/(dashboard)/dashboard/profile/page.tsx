@@ -36,15 +36,20 @@ export default function ProfilePage() {
     <div className="max-w-3xl mx-auto p-6 space-y-4">
       <h1 className="text-xl font-semibold">Edytuj dane profilu</h1>
 
-      <ParentProfileForm
+     <ParentProfileForm
         initialValues={initialValues}
         mode="edit"
         submitLabel="Zapisz zmiany"
         onSubmit={async (data) => {
           if (!user) return;
           await updateUserProfile(user.uid, data);
+
+          // 🔥 refetch, żeby pobrać dzieci już z id i nie robić duplikatów przy kolejnym zapisie
+          const fresh = await getUserProfile(user.uid);
+          setInitialValues(fresh);
         }}
       />
+
     </div>
   );
 }

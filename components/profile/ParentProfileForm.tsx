@@ -1,8 +1,9 @@
 "use client";
-
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ParentFormData } from "@/types/profile";
 import type { ChildInput } from "@/types/auth";
+import { upsertChildrenForParent } from "@/services/children.service";
+//import { updateParentProfile } from "@/services/user-profile.service"; 
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,10 @@ export function ParentProfileForm({
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setForm(initialValues);
+  }, [initialValues]);
 
   function touch(name: string) {
     setTouched((t) => ({ ...t, [name]: true }));
@@ -161,7 +166,7 @@ export function ParentProfileForm({
       setShowConfirm(true);
       return;
     }
-
+    
     await submitForm(form);
   }
 

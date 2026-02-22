@@ -325,7 +325,7 @@ export function WeekCalendar() {
         />
       )}
 
-      {/* Edit */}
+     {/* Edit */}
       {editing && (
         <CreateClassDialog
           mode="edit"
@@ -337,9 +337,11 @@ export function WeekCalendar() {
           }}
           onClose={() => setEditing(null)}
           onCreated={(updated) => {
-            setClasses((c) =>
-              c.map((x) => (x.id === updated.id ? updated : x))
-            );
+            setClasses((c) => c.map((x) => (x.id === updated.id ? updated : x)));
+            setEditing(null);
+          }}
+          onDeleted={() => {
+            setClasses((c) => c.filter((x) => x.id !== editing.id));
             setEditing(null);
           }}
         />

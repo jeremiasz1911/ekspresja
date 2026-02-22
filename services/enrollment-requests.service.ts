@@ -11,6 +11,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 
+import { orderBy, limit } from "firebase/firestore";
 import type { EnrollmentRequest, PaymentMethod } from "@/types";
 
 /**
@@ -27,7 +28,7 @@ export async function createEnrollmentRequest(params: {
   // zabezpieczenie: czy nie ma już requesta
   const existing = await getDocs(
     query(
-      collection(db, "enrollmentRequests"),
+      collection(db, "enrollment_requests"),
       where("childId", "==", childId),
       where("classId", "==", classId),
       where("status", "in", ["pending", "approved"])
@@ -38,7 +39,7 @@ export async function createEnrollmentRequest(params: {
     throw new Error("Zgłoszenie już istnieje dla tego dziecka i zajęć.");
   }
 
-  await addDoc(collection(db, "enrollmentRequests"), {
+  await addDoc(collection(db, "enrollment_requests"), {
     parentId,
     childId,
     classId,
@@ -52,11 +53,11 @@ export async function createEnrollmentRequest(params: {
 /**
  * User: pobiera swoje zgłoszenia
  */
-export async function getParentEnrollmentRequests(
+export async function getParentenrollment_requests(
   parentId: string
 ): Promise<EnrollmentRequest[]> {
   const q = query(
-    collection(db, "enrollmentRequests"),
+    collection(db, "enrollment_requests"),
     where("parentId", "==", parentId)
   );
 
@@ -72,7 +73,7 @@ export async function getParentEnrollmentRequests(
  * User: anulowanie zgłoszenia (tylko pending)
  */
 export async function cancelEnrollmentRequest(requestId: string) {
-  await updateDoc(doc(db, "enrollmentRequests", requestId), {
+  await updateDoc(doc(db, "enrollment_requests", requestId), {
     status: "rejected",
   });
 }
@@ -86,7 +87,7 @@ export async function getEnrollmentRequestForChild(
 ): Promise<EnrollmentRequest | null> {
   const snap = await getDocs(
     query(
-      collection(db, "enrollmentRequests"),
+      collection(db, "enrollment_requests"),
       where("childId", "==", childId),
       where("classId", "==", classId)
     )
@@ -94,8 +95,18 @@ export async function getEnrollmentRequestForChild(
 
   if (snap.empty) return null;
 
-  const d = snap.docs[0];
-  return { id: d.id, ...(d.data() as Omit<EnrollmentRequest, "id">) };
+  const all = snap.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<EnrollmentRequest, "id">),
+  })) as EnrollmentRequest[];
+
+  // preferuj aktywne statusy
+  const active = all.find((r) => r.status === "approved" || r.status === "pending");
+  if (active) return active;
+
+  // fallback: zwróć “jakiś” (np. ostatni po createdAt jeśli jest)
+  all.sort((a: any, b: any) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+  return all[0] ?? null;
 }
 
 /**
@@ -107,6 +118,6 @@ export async function withdrawEnrollmentRequest(
   console.log("DELETE enrollment_requests:", requestId);
 
   await deleteDoc(
-    doc(db, "enrollmentRequests", requestId)
+    doc(db, "enrollment_requests", requestId)
   );
 }

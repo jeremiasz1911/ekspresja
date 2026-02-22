@@ -2,7 +2,7 @@ export type RecurrenceType = "none" | "weekly" | "biweekly" | "monthly";
 
 export type ClassRecurrence = {
   type: RecurrenceType;
-  interval: number;       // 1=co tydzień, 2=co 2 tyg.
+  interval: number;       // 1=co tydzień, 2=co 2 tyg., itd.
   startDate: string;      // YYYY-MM-DD
   endDate?: string;
 };
@@ -26,7 +26,6 @@ export type Class = {
   instructorName: string;
   color: string;
 
-
   location: string;
   category: ClassCategory;
 
@@ -36,14 +35,19 @@ export type Class = {
 
   recurrence: ClassRecurrence;
 
-  enrolledChildrenIds: string[];
-  groupIds?: string[];            
-
+  groupIds?: string[];
   icon?: ClassIcon;
   imageUrl?: string;
 
   capacity?: number;
-  
+
+  /**
+   * @deprecated NIE używaj do zapisów.
+   * ZAPISY = kolekcje enrollments/reservations.
+   * To pole usuń z użycia i docelowo z bazy.
+   */
+  enrolledChildrenIds?: string[];
+
   isActive: boolean;
   createdAt: number;
   createdBy: string;

@@ -5,9 +5,9 @@ import {
   getDocs,
   query,
   where,
-  doc, 
-  updateDoc, 
-  deleteDoc
+  doc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import type { Class } from "@/types/classes";
 
@@ -21,10 +21,7 @@ export async function getActiveClasses(): Promise<Class[]> {
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Class, "id">) }));
 }
 
-export async function updateClass(
-  id: string,
-  data: Partial<Class>
-) {
+export async function updateClass(id: string, data: Partial<Class>) {
   return updateDoc(doc(db, "classes", id), data);
 }
 

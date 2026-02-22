@@ -13,18 +13,10 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Class, RecurrenceType, ClassIcon } from "@/types/classes";
 import { Group } from "@/types/groups";
-import {
-  createClass,
-  updateClass,
-  deleteClass,
-} from "@/services/classes.service";
+import { createClass, updateClass, deleteClass } from "@/services/classes.service";
 import { uploadClassImage } from "@/services/upload.service";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getAllChildren } from "@/services/children.service";
 import { getAllGroups } from "@/services/groups.service";
-import { SelectChildrenModal } from "@/components/admin/SelectChildrenModal";
-import type { ChildWithParent } from "@/types/children";
-
 
 type Props = {
   mode: "create" | "edit";
@@ -36,6 +28,7 @@ type Props = {
   };
   onClose(): void;
   onCreated(cls: Class): void;
+  onDeleted?(): void; // ✅ żeby WeekCalendar mógł usunąć z listy
 };
 
 export function CreateClassDialog({
@@ -44,13 +37,22 @@ export function CreateClassDialog({
   initial,
   onClose,
   onCreated,
+  onDeleted,
 }: Props) {
   const { user } = useAuth();
-
   const initialData = classToEdit;
+
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imageUrl ?? null);
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [form, setForm] = useState({
     title: initialData?.title ?? "",
+    description: initialData?.description ?? "",
     instructorName: initialData?.instructorName ?? "",
     location: initialData?.location ?? "",
     category: initialData?.category ?? "music",
@@ -60,62 +62,41 @@ export function CreateClassDialog({
     startTime: initialData?.startTime ?? initial.startTime,
     endTime: initialData?.endTime ?? "",
 
-    recurrenceType: initialData?.recurrence.type ?? "weekly",
+    recurrenceType: (initialData?.recurrence.type ?? "weekly") as RecurrenceType,
     interval: initialData?.recurrence.interval ?? 1,
     startDate: initialData?.recurrence.startDate ?? initial.startDate,
     endDate: initialData?.recurrence.endDate ?? "",
 
-    enrolledChildrenIds: initialData?.enrolledChildrenIds ?? [],
     groupIds: initialData?.groupIds ?? [],
-    imageUrl: initialData?.imageUrl ?? null,
   });
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [children, setChildren] = useState<ChildWithParent[]>([]);
-
-  const [groups, setGroups] = useState<Group[]>([]);
-
-  const [childrenModalOpen, setChildrenModalOpen] = useState(false);
-
   useEffect(() => {
-    getAllChildren().then(setChildren);
     getAllGroups().then(setGroups);
   }, []);
 
   useEffect(() => {
-    if (classToEdit?.imageUrl) {
-      setPreviewUrl(classToEdit.imageUrl);
-    }
-  }, [classToEdit]);
+    if (initialData?.imageUrl) setPreviewUrl(initialData.imageUrl);
+  }, [initialData?.imageUrl]);
 
-  function update<K extends keyof typeof form>(
-    key: K,
-    value: (typeof form)[K]
-  ) {
+  function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
   function validate() {
     const e: Record<string, string> = {};
-
     if (!form.title.trim()) e.title = "Podaj nazwę zajęć.";
-    if (!form.instructorName.trim())
-      e.instructorName = "Podaj prowadzącego.";
+    if (!form.instructorName.trim()) e.instructorName = "Podaj prowadzącego.";
     if (!form.location.trim()) e.location = "Podaj miejsce.";
-
     if (!form.startTime) e.startTime = "Podaj godzinę rozpoczęcia.";
     if (!form.endTime) e.endTime = "Podaj godzinę zakończenia.";
-
-    if (form.startTime && form.endTime) {
-      if (form.endTime <= form.startTime) {
-        e.endTime = "Godzina zakończenia musi być późniejsza.";
-      }
+    if (form.startTime && form.endTime && form.endTime <= form.startTime) {
+      e.endTime = "Godzina zakończenia musi być późniejsza.";
     }
-
     if (!form.startDate) e.startDate = "Podaj datę startu.";
+
+    if (form.endDate && form.endDate < form.startDate) {
+      e.endDate = "Data końca nie może być wcześniejsza niż start.";
+    }
 
     return e;
   }
@@ -125,52 +106,56 @@ export function CreateClassDialog({
 
     const validationErrors = validate();
     setErrors(validationErrors);
-
     if (Object.keys(validationErrors).length > 0) return;
 
     setSaving(true);
 
     try {
+      const recurrenceInterval =
+        form.recurrenceType === "none" ? 1 : Math.max(1, Number(form.interval || 1));
+
       const payload: Omit<Class, "id"> = {
-        title: form.title,
-        description: "",
-        instructorName: form.instructorName,
-        location: form.location,
+        title: form.title.trim(),
+        description: form.description?.trim() || "",
+        instructorName: form.instructorName.trim(),
+        location: form.location.trim(),
         category: form.category,
         color: form.color,
-        icon: form.icon,
+        icon: form.icon as ClassIcon,
 
         weekday: initial.weekday,
         startTime: form.startTime,
         endTime: form.endTime,
 
         recurrence: {
-            type: form.recurrenceType,
-            interval: form.interval,
-            startDate: form.startDate,
-            ...(form.endDate ? { endDate: form.endDate } : {}),
+          type: form.recurrenceType,
+          interval: recurrenceInterval,
+          startDate: form.startDate,
+          ...(form.endDate ? { endDate: form.endDate } : {}),
         },
 
-        enrolledChildrenIds: form.enrolledChildrenIds,
-        isActive: true,
+        // ✅ zapisujemy groupIds (wcześniej tego brakowało)
+        groupIds: form.groupIds,
 
-        createdAt: Date.now(),
-        createdBy: user.uid,
+        isActive: true,
+        createdAt: initialData?.createdAt ?? Date.now(),
+        createdBy: initialData?.createdBy ?? user.uid,
       };
 
-      let classId = classToEdit?.id;
+      let classId = initialData?.id;
 
       if (mode === "create") {
         const ref = await createClass(payload);
         classId = ref.id;
       } else {
-        await updateClass(classToEdit!.id, payload);
+        await updateClass(classId!, payload);
       }
 
-      let imageUrl: string | undefined = classToEdit?.imageUrl;
-
+      // ✅ upload zdjęcia i zapis imageUrl do Firestore
+      let imageUrl: string | undefined = initialData?.imageUrl;
       if (imageFile) {
         imageUrl = await uploadClassImage(imageFile, classId!);
+        await updateClass(classId!, { imageUrl });
       }
 
       onCreated({ id: classId!, ...payload, imageUrl });
@@ -180,10 +165,11 @@ export function CreateClassDialog({
   }
 
   async function handleDelete() {
-    if (!classToEdit) return;
+    if (!initialData) return;
     if (!confirm("Usunąć zajęcia?")) return;
 
-    await deleteClass(classToEdit.id);
+    await deleteClass(initialData.id);
+    onDeleted?.();
     onClose();
   }
 
@@ -191,14 +177,10 @@ export function CreateClassDialog({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>
-            {mode === "edit" ? "Edytuj zajęcia" : "Dodaj zajęcia"}
-          </DialogTitle>
+          <DialogTitle>{mode === "edit" ? "Edytuj zajęcia" : "Dodaj zajęcia"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-
-          {/* Nazwa */}
           <div>
             <Input
               placeholder="Nazwa zajęć *"
@@ -206,29 +188,27 @@ export function CreateClassDialog({
               onChange={(e) => update("title", e.target.value)}
               className={errors.title ? "border-red-500" : ""}
             />
-            {errors.title && (
-              <p className="text-xs text-red-500 mt-1">{errors.title}</p>
-            )}
+            {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
           </div>
 
-          {/* Prowadzący */}
+          <div>
+            <Input
+              placeholder="Opis (opcjonalnie)"
+              value={form.description}
+              onChange={(e) => update("description", e.target.value)}
+            />
+          </div>
+
           <div>
             <Input
               placeholder="Prowadzący *"
               value={form.instructorName}
-              onChange={(e) =>
-                update("instructorName", e.target.value)
-              }
+              onChange={(e) => update("instructorName", e.target.value)}
               className={errors.instructorName ? "border-red-500" : ""}
             />
-            {errors.instructorName && (
-              <p className="text-xs text-red-500 mt-1">
-                {errors.instructorName}
-              </p>
-            )}
+            {errors.instructorName && <p className="text-xs text-red-500 mt-1">{errors.instructorName}</p>}
           </div>
 
-          {/* Miejsce */}
           <div>
             <Input
               placeholder="Miejsce *"
@@ -236,59 +216,36 @@ export function CreateClassDialog({
               onChange={(e) => update("location", e.target.value)}
               className={errors.location ? "border-red-500" : ""}
             />
-            {errors.location && (
-              <p className="text-xs text-red-500 mt-1">
-                {errors.location}
-              </p>
-            )}
+            {errors.location && <p className="text-xs text-red-500 mt-1">{errors.location}</p>}
           </div>
 
-          {/* Godziny */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Input
                 type="time"
                 value={form.startTime}
-                onChange={(e) =>
-                  update("startTime", e.target.value)
-                }
+                onChange={(e) => update("startTime", e.target.value)}
                 className={errors.startTime ? "border-red-500" : ""}
               />
-              {errors.startTime && (
-                <p className="text-xs text-red-500 mt-1">
-                  {errors.startTime}
-                </p>
-              )}
+              {errors.startTime && <p className="text-xs text-red-500 mt-1">{errors.startTime}</p>}
             </div>
 
             <div>
               <Input
                 type="time"
                 value={form.endTime}
-                onChange={(e) =>
-                  update("endTime", e.target.value)
-                }
+                onChange={(e) => update("endTime", e.target.value)}
                 className={errors.endTime ? "border-red-500" : ""}
               />
-              {errors.endTime && (
-                <p className="text-xs text-red-500 mt-1">
-                  {errors.endTime}
-                </p>
-              )}
+              {errors.endTime && <p className="text-xs text-red-500 mt-1">{errors.endTime}</p>}
             </div>
           </div>
 
-          {/* Powtarzalność */}
           <div className="grid grid-cols-2 gap-3">
             <select
               className="input"
               value={form.recurrenceType}
-              onChange={(e) =>
-                update(
-                  "recurrenceType",
-                  e.target.value as RecurrenceType
-                )
-              }
+              onChange={(e) => update("recurrenceType", e.target.value as RecurrenceType)}
             >
               <option value="none">Jednorazowo</option>
               <option value="weekly">Co tydzień</option>
@@ -300,56 +257,41 @@ export function CreateClassDialog({
               type="number"
               min={1}
               value={form.interval}
-              onChange={(e) =>
-                update("interval", Number(e.target.value))
-              }
+              disabled={form.recurrenceType === "none"}
+              onChange={(e) => update("interval", Number(e.target.value))}
             />
           </div>
 
-          {/* Zakres */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-muted-foreground">
-                Od kiedy *
-              </label>
+              <label className="text-xs text-muted-foreground">Od kiedy *</label>
               <Input
                 type="date"
                 value={form.startDate}
-                onChange={(e) =>
-                  update("startDate", e.target.value)
-                }
+                onChange={(e) => update("startDate", e.target.value)}
                 className={errors.startDate ? "border-red-500" : ""}
               />
-              {errors.startDate && (
-                <p className="text-xs text-red-500 mt-1">
-                  {errors.startDate}
-                </p>
-              )}
+              {errors.startDate && <p className="text-xs text-red-500 mt-1">{errors.startDate}</p>}
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground">
-                Do kiedy (opcjonalnie)
-              </label>
+              <label className="text-xs text-muted-foreground">Do kiedy (opcjonalnie)</label>
               <Input
                 type="date"
                 value={form.endDate}
-                onChange={(e) =>
-                  update("endDate", e.target.value)
-                }
+                onChange={(e) => update("endDate", e.target.value)}
+                className={errors.endDate ? "border-red-500" : ""}
               />
+              {errors.endDate && <p className="text-xs text-red-500 mt-1">{errors.endDate}</p>}
             </div>
           </div>
 
-          {/* Ikona */}
           <div>
             <label className="text-sm font-medium">Ikona</label>
             <select
               className="input mt-1"
               value={form.icon}
-              onChange={(e) =>
-                update("icon", e.target.value as ClassIcon)
-              }
+              onChange={(e) => update("icon", e.target.value as any)}
             >
               <option value="music">🎵 Muzyka</option>
               <option value="guitar">🎸 Gitara</option>
@@ -360,87 +302,50 @@ export function CreateClassDialog({
             </select>
           </div>
 
-        {/* Grupy */}
-            <div>
+          {/* ✅ Grupy (zapis do payload działa) */}
+          <div>
             <label className="text-sm font-medium">Grupy</label>
-
             <div className="mt-2 flex flex-wrap gap-2">
-                {groups.map((g) => {
+              {groups.map((g) => {
                 const active = form.groupIds.includes(g.id);
-
                 return (
-                    <button
+                  <button
                     key={g.id}
                     type="button"
                     onClick={() =>
-                        update(
+                      update(
                         "groupIds",
-                        active
-                            ? form.groupIds.filter((id) => id !== g.id)
-                            : [...form.groupIds, g.id]
-                        )
+                        active ? form.groupIds.filter((id) => id !== g.id) : [...form.groupIds, g.id]
+                      )
                     }
                     className={cn(
-                        "px-3 py-1 rounded-full text-sm border transition",
-                        active
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted hover:bg-muted/70"
+                      "px-3 py-1 rounded-full text-sm border transition",
+                      active ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"
                     )}
-                    >
+                  >
                     {g.name}
-                    </button>
+                  </button>
                 );
-                })}
-            </div>
-            </div>
-
-          {/* Dzieci zapisane */}
-          <div>
-            <label className="text-sm font-medium">Zapisane dzieci</label>
-
-            <div className="mt-2 flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setChildrenModalOpen(true)}
-              >
-                Wybierz dzieci
-              </Button>
-
-              <span className="text-sm text-muted-foreground">
-                Wybrano: {form.enrolledChildrenIds.length}
-              </span>
+              })}
             </div>
           </div>
 
-          {/* Kolor */}
+          {/* ✅ Kolor */}
           <div className="flex items-center gap-3">
             <span className="text-sm">Kolor</span>
-            <input
-              type="color"
-              value={form.color}
-              onChange={(e) =>
-                update("color", e.target.value)
-              }
-            />
+            <input type="color" value={form.color} onChange={(e) => update("color", e.target.value)} />
           </div>
 
-          {/* Zdjęcie */}
+          {/* ✅ Zdjęcie */}
           <div>
-            <label className="text-sm font-medium">
-              Zdjęcie (opcjonalne)
-            </label>
+            <label className="text-sm font-medium">Zdjęcie (opcjonalne)</label>
 
             <div
               className={cn(
                 "mt-2 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition",
-                previewUrl
-                  ? "border-muted"
-                  : "border-muted-foreground/30 hover:border-primary"
+                previewUrl ? "border-muted" : "border-muted-foreground/30 hover:border-primary"
               )}
-              onClick={() =>
-                document.getElementById("class-image")?.click()
-              }
+              onClick={() => document.getElementById("class-image")?.click()}
             >
               <input
                 id="class-image"
@@ -463,10 +368,7 @@ export function CreateClassDialog({
 
               {previewUrl ? (
                 <div className="space-y-2">
-                  <img
-                    src={previewUrl}
-                    className="mx-auto h-32 rounded-md object-cover"
-                  />
+                  <img src={previewUrl} className="mx-auto h-32 rounded-md object-cover" />
                   <button
                     type="button"
                     onClick={(e) => {
@@ -483,21 +385,18 @@ export function CreateClassDialog({
                 <div className="text-sm text-muted-foreground">
                   Kliknij aby dodać zdjęcie
                   <br />
-                  <span className="text-xs">
-                    (PNG / JPG, max 2MB)
-                  </span>
+                  <span className="text-xs">(PNG / JPG, max 2MB)</span>
                 </div>
               )}
             </div>
           </div>
+
+          {/* ❌ USUNIĘTE: “Zapisane dzieci” (to nie powinno być w klasie) */}
         </div>
 
         <DialogFooter className="flex justify-between">
           {mode === "edit" && (
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-            >
+            <Button variant="destructive" onClick={handleDelete}>
               Usuń
             </Button>
           )}
@@ -511,17 +410,6 @@ export function CreateClassDialog({
             </Button>
           </div>
         </DialogFooter>
-      <SelectChildrenModal
-        open={childrenModalOpen}
-        childrenList={children}
-        selectedIds={form.enrolledChildrenIds}
-        onClose={() => setChildrenModalOpen(false)}
-        onSave={(ids) => {
-          update("enrolledChildrenIds", ids);
-          setChildrenModalOpen(false);
-        }}
-      />
-
       </DialogContent>
     </Dialog>
   );
