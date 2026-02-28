@@ -23,7 +23,7 @@ type CreditsInfo =
       periodKey: string;
     };
 
-export function CreditsBadge() {
+export function CreditsBadge({ dates }: { dates?: string[] }) {
   const { user } = useAuth();
   const [info, setInfo] = useState<CreditsInfo>({ state: "loading" });
 
@@ -46,25 +46,19 @@ export function CreditsBadge() {
         return;
       }
 
-      const now = Date.now();
+      const baseYMD = dates?.[0] ?? null;
+      const baseTs = baseYMD ? new Date(`${baseYMD}T12:00:00`).getTime() : Date.now();
 
-      let best:
-        | {
-            id: string;
-            remaining: number;
-            used: number;
-            total: number;
-            periodKey: string;
-          }
-        | null = null;
+      let best: any = null;
 
       for (const d of snap.docs) {
         const data: any = d.data();
 
-        // 🔥 validity check
         const validFrom = Number(data?.validFrom || 0);
         const validTo = Number(data?.validTo || 0);
-        if (!(validFrom <= now && now <= validTo)) continue;
+
+        // ✅ jeśli mamy dates -> sprawdzamy ważność dla tej daty, nie dla "teraz"
+        if (baseTs < validFrom || baseTs > validTo) continue;
 
         const credits = data?.limits?.credits || {};
         const total = Number(credits?.amount || 0);
@@ -73,18 +67,11 @@ export function CreditsBadge() {
 
         if (!unlimited && total <= 0) continue;
 
-        const key = usageKeyForPeriod(period, now);
+        const key = usageKeyForPeriod(period, baseTs);
         const used = Number(data?.usage?.credits?.[key] || 0);
         const remaining = unlimited ? 999999 : Math.max(0, total - used);
 
-        const candidate = {
-          id: d.id,
-          remaining,
-          used,
-          total: unlimited ? 999999 : total,
-          periodKey: key,
-        };
-
+        const candidate = { id: d.id, remaining, used, total: unlimited ? 999999 : total, periodKey: key };
         if (!best || candidate.remaining > best.remaining) best = candidate;
       }
 
@@ -93,16 +80,11 @@ export function CreditsBadge() {
         return;
       }
 
-      setInfo({
-        state: "loaded",
-        remaining: best.remaining,
-        used: best.used,
-        total: best.total,
-        entitlementId: best.id,
-        periodKey: best.periodKey,
-      });
+      setInfo({ state: "loaded", ...best });
     })();
-  }, [user]);
+  }, [user, dates?.join("|")]);
+
+  // reszta renderu bez zmian
 
   if (info.state === "none") return null;
 

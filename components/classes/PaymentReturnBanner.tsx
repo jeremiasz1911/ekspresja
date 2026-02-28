@@ -2,7 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs, limit } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  onSnapshot,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
@@ -30,6 +39,7 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
   }, [onFinalized]);
 
   const cleanUrl = useMemo(() => "/dashboard/classes", []);
+  const paymentsUrl = useMemo(() => "/dashboard/payments", []);
 
   useEffect(() => {
     if (!payment || !intentId) return;
@@ -41,12 +51,16 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
     let clearTimer: any = null;
     let fallbackTimer: any = null;
 
-    const clearQuerySoon = (delayMs: number) => {
+    const clearQuerySoon = (delayMs: number, url: string = cleanUrl) => {
       if (clearTimer) clearTimeout(clearTimer);
-      clearTimer = setTimeout(() => router.replace(cleanUrl), delayMs);
+      clearTimer = setTimeout(() => router.replace(url), delayMs);
     };
 
-    const safeSet = (nextState: BannerState, nextMsg: string, nextDetails?: string | null) => {
+    const safeSet = (
+      nextState: BannerState,
+      nextMsg: string,
+      nextDetails?: string | null
+    ) => {
       if (doneRef.current) return;
       setState(nextState);
       setMsg(nextMsg);
@@ -69,30 +83,44 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
     (async () => {
       try {
         const snap = await getDoc(intentRef);
-        if (snap.exists()) {
-          const data: any = snap.data();
-          const status = String(data?.status || "");
-          const finalizedAt = data?.finalizedAt;
+        if (!snap.exists()) return;
 
-          if (finalizedAt) {
-            doneRef.current = true;
-            setState("success");
-            setMsg("✅ Gotowe. Zapisy zostały zaktualizowane.");
-            onFinalizedRef.current?.();
-            clearQuerySoon(1200);
-            return;
-          }
+        const data: any = snap.data();
+        const status = String(data?.status || "");
+        const finalizedAt = data?.finalizedAt;
+        const finalizeError = data?.finalizeError;
 
-          if (status === "failed" || status === "cancelled") {
-            doneRef.current = true;
-            safeSet("error", "❌ Płatność oznaczona jako nieudana.");
-            clearQuerySoon(3000);
-            return;
-          }
+        // ✅ NOWE: finalizacja się wysypała -> nie wieszamy UI
+        if (finalizeError) {
+          doneRef.current = true;
+          safeSet(
+            "error",
+            "⚠️ Płatność potwierdzona, ale nie udało się dokończyć zamówienia.",
+            String(finalizeError)
+          );
+          return;
+        }
+
+        if (finalizedAt) {
+          doneRef.current = true;
+          setState("success");
+          setMsg("✅ Gotowe. Zapisy zostały zaktualizowane.");
+          onFinalizedRef.current?.();
+          clearQuerySoon(1200);
+          return;
+        }
+
+        if (status === "failed" || status === "cancelled") {
+          doneRef.current = true;
+          safeSet("error", "❌ Płatność oznaczona jako nieudana.");
+          clearQuerySoon(3000);
+          return;
         }
       } catch (e: any) {
         // np. adblock / permission
-        setDetails("Nie mogę odczytać statusu płatności (blokada / rules). Spróbuję potwierdzić zapis inaczej…");
+        setDetails(
+          "Nie mogę odczytać statusu płatności (blokada / rules). Spróbuję potwierdzić zapis inaczej…"
+        );
       }
     })();
 
@@ -105,6 +133,18 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
         const data: any = snap.data();
         const status = String(data?.status || "");
         const finalizedAt = data?.finalizedAt;
+        const finalizeError = data?.finalizeError;
+
+        // ✅ NOWE: finalizacja się wysypała -> pokaż błąd
+        if (finalizeError) {
+          doneRef.current = true;
+          safeSet(
+            "error",
+            "⚠️ Płatność potwierdzona, ale nie udało się dokończyć zamówienia.",
+            String(finalizeError)
+          );
+          return;
+        }
 
         if (status === "paid" && !finalizedAt) {
           safeSet("pending", "✅ Płatność potwierdzona. Finalizujemy zapis…");
@@ -126,20 +166,31 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
           clearQuerySoon(3000);
         }
       },
-      (err) => {
+      () => {
         setDetails("Nie mogę słuchać statusu płatności (blokada / rules).");
       }
     );
 
-    // ✅ 3) Fallback po 6s: jeśli intent nie dochodzi, a zapis już jest (enrollment istnieje) -> pokaż sukces
+    // ✅ 3) Fallback po 6s: jeśli intent nie dochodzi, a zapis już jest -> pokaż sukces
     fallbackTimer = setTimeout(async () => {
       if (doneRef.current) return;
 
       try {
-        // spróbuj odczytać intent (może już jest finalizedAt)
         const intentSnap = await getDoc(intentRef);
         const data: any = intentSnap.data() || {};
         const finalizedAt = data?.finalizedAt;
+        const finalizeError = data?.finalizeError;
+
+        // ✅ NOWE: pokaż powód, nie "czekamy…"
+        if (finalizeError) {
+          doneRef.current = true;
+          safeSet(
+            "error",
+            "⚠️ Płatność potwierdzona, ale nie udało się dokończyć zamówienia.",
+            String(finalizeError)
+          );
+          return;
+        }
 
         if (finalizedAt) {
           doneRef.current = true;
@@ -150,11 +201,11 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
           return;
         }
 
-        // jeśli nie możemy polegać na finalizedAt (rules/adblock), spróbuj potwierdzić skutki:
-        // 1) one-off class -> enrollment
+        // jeśli nie możemy polegać na finalizedAt, spróbuj potwierdzić skutki:
         const classId = String(data?.metadata?.classId || "");
         const childId = String(data?.metadata?.childId || "");
 
+        // 1) enrollment istnieje
         if (classId && childId) {
           const enrollSnap = await getDocs(
             query(
@@ -175,7 +226,7 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
           }
         }
 
-        // 2) monthly/other -> entitlement (u Ciebie entitlements docId = intentId)
+        // 2) entitlement (u Ciebie entitlements docId = intentId)
         const entSnap = await getDoc(doc(db, "entitlements", intentId));
         if (entSnap.exists()) {
           doneRef.current = true;
@@ -185,14 +236,14 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
           clearQuerySoon(1200);
           return;
         }
-      } catch (e) {
+      } catch {
         setDetails((d) => d || "Wygląda na to, że coś blokuje połączenie z Firestore (np. adblock).");
       }
 
+      // dalej pending
       setState("pending");
-      setMsg("⏳ Nadal czekamy na potwierdzenie. Jeśli trwa to długo, odśwież stronę.");
+      setMsg("⏳ Nadal czekamy na potwierdzenie. Jeśli trwa to długo, wejdź w Płatności i sprawdź status.");
     }, 6000);
-
 
     return () => {
       if (unsub) unsub();
@@ -200,7 +251,7 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
       if (clearTimer) clearTimeout(clearTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payment, intentId, router, cleanUrl]);
+  }, [payment, intentId, router, cleanUrl, paymentsUrl]);
 
   if (!msg || state === "idle") return null;
 
@@ -231,11 +282,18 @@ export function PaymentReturnBanner(props: { onFinalized?: () => void }) {
           </div>
         </div>
 
-        {state === "pending" && (
-          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-            Odśwież
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {(state === "pending" || state === "error") && (
+            <Button variant="outline" size="sm" onClick={() => router.push(paymentsUrl)}>
+              Płatności
+            </Button>
+          )}
+          {state === "pending" && (
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+              Odśwież
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

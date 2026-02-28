@@ -164,9 +164,8 @@ export async function POST(req: Request) {
     // ✅ krytyczne: tylko entitlements ważne dla TERAZ i dla wszystkich dat
     const entDocs = entSnap.docs
       .map((d) => ({ id: d.id, ...(d.data() as EntDoc) }))
-      .filter((e) => now >= Number(e.validFrom || 0) && now <= Number(e.validTo || 0))
       .filter((e) => {
-        // entitlement musi obejmować wszystkie daty rezerwacji
+        // entitlement musi obejmować WSZYSTKIE requestedDates
         return requestedDates.every((ymd) => {
           const ts = parseYMD(ymd).getTime();
           return ts >= Number(e.validFrom || 0) && ts <= Number(e.validTo || 0);
@@ -264,9 +263,6 @@ export async function POST(req: Request) {
       if (ent2.status !== "active") throw new Error("Entitlement not active");
 
       // ✅ ważność w transakcji
-      if (!(now >= Number(ent2.validFrom || 0) && now <= Number(ent2.validTo || 0))) {
-        throw new Error("Entitlement expired");
-      }
       for (const ymd of requestedDates) {
         const ts = parseYMD(ymd).getTime();
         if (ts < Number(ent2.validFrom || 0) || ts > Number(ent2.validTo || 0)) {

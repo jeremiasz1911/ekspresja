@@ -13,24 +13,34 @@ export type PaymentIntent = {
   parentId: string;
   email?: string;
   payerName?: string;
-  childId?: string; // zależy od planu
+
+  childId?: string; // (opcjonalne) jeśli gdzieś tego używasz
   planId: string;
-  
+
   amountCents: number;
   currency: "PLN";
   description: string;
-  
+
   provider: PaymentProvider;
   providerTransactionId?: string;
 
   status: PaymentIntentStatus;
+  providerTitle?: string;
 
-  // kontekst zakupu
+  processingAt?: number;          // ✅ było w intentKeys u Ciebie
+  finalizedAt?: number;
+  finalizeError?: string | null;  // ✅ NOWE: żeby UI nie wisiało
+
+  updatedAt?: number;
+
   metadata?: {
     classId?: string;
     childId?: string;
     occurrenceId?: string;
     enrollNow?: boolean;
+
+    dateYMD?: string;
+    dates?: string[];
   };
 
   createdAt: number;

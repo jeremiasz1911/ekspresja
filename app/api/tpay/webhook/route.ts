@@ -145,25 +145,46 @@ export async function POST(req: Request) {
 
   // 4) PAID -> FINALIZE
   try {
+    // ✅ najpierw zapisz, że płatność jest PAID (żeby UI nie wisiało)
+    await intentRef.set(
+      {
+        status: "paid",
+        paidAt: intent?.paidAt ?? Date.now(),
+        provider: "tpay",
+        providerTransactionId: trId,
+        finalizeError: null,
+        updatedAt: Date.now(),
+      },
+      { merge: true }
+    );
+
     await finalizePaidIntent({
       intentId,
       providerTransactionId: trId,
     });
 
-    // wyczyść processingAt
     await intentRef.set(
       { processingAt: null, updatedAt: Date.now() },
       { merge: true }
     );
 
     console.log("[TPAY WEBHOOK] Finalized intent:", intentId);
-  } catch (e) {
+  } catch (e: any) {
+    const msg = String(e?.message || e);
+
     console.error("[TPAY WEBHOOK] Finalize error", e);
 
-    // nie kończymy FALSE — ale warto wyczyścić processingAt, by kolejne retry mogło spróbować ponownie
+    // ✅ zapisz błąd finalizacji (UI ma to pokazać)
     try {
       await intentRef.set(
-        { processingAt: null, updatedAt: Date.now() },
+        {
+          status: "paid",
+          provider: "tpay",
+          providerTransactionId: trId,
+          finalizeError: msg,
+          processingAt: null,
+          updatedAt: Date.now(),
+        },
         { merge: true }
       );
     } catch {}

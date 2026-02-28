@@ -108,8 +108,16 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
 
   /* ================= CREDITS ================= */
 
-  async function loadCredits(forChildId: string) {
+  function tsFromYMD(ymd: string) {
+    // południe żeby uniknąć przesunięć strefy
+    return new Date(`${ymd}T12:00:00`).getTime();
+  }
+
+  async function loadCredits(forChildId: string, forDates?: string[] | null) {
     if (!user) return;
+
+    const baseYMD = (forDates && forDates[0]) ? forDates[0] : (initialDateYMD ?? null);
+    const baseTs = baseYMD ? tsFromYMD(baseYMD) : Date.now();
 
     const snap = await getDocsFromServer(
       query(
@@ -119,7 +127,6 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
       )
     );
 
-    const now = Date.now();
     let bestRemaining = 0;
     let hasAny = false;
 
@@ -127,8 +134,13 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
       const data: any = doc.data();
       const entChildId = String(data?.childId || "").trim();
 
-      // bierz parent-scope + child-scope tego dziecka
+      // parent-scope + child-scope
       if (entChildId && entChildId !== forChildId) return;
+
+      // ✅ entitlement musi obejmować miesiąc/termin który sprawdzamy
+      const validFrom = Number(data?.validFrom || 0);
+      const validTo = Number(data?.validTo || 0);
+      if (baseTs < validFrom || baseTs > validTo) return;
 
       const credits = data?.limits?.credits || {};
       const period = String(credits?.period || "month");
@@ -137,7 +149,8 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
 
       if (!unlimited && total <= 0) return;
 
-      const key = usageKeyForPeriod(period, now);
+      // ✅ klucz okresu liczony z DATY KLIKNIĘTEGO TERMINU (a nie z "teraz")
+      const key = usageKeyForPeriod(period, baseTs);
       const used = Number(data?.usage?.credits?.[key] || 0);
       const remaining = unlimited ? 999999 : Math.max(0, total - used);
 
@@ -148,9 +161,10 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
     setCreditsLoadedForChild(forChildId);
     setCreditsRemaining(hasAny ? bestRemaining : 0);
 
-    // auto credits, ale nie nadpisuj online
     if (hasAny && bestRemaining > 0) {
-      setPaymentMethod((prev) => (prev === "cash" || prev === "declaration" ? "credits" : prev));
+      setPaymentMethod((prev) =>
+        prev === "cash" || prev === "declaration" ? "credits" : prev
+      );
     }
   }
 
@@ -183,7 +197,7 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
   useEffect(() => {
     if (!open || !user) return;
     if (!selectedChildId) return;
-    loadCredits(selectedChildId);
+    loadCredits(selectedChildId, initialDateYMD ? [initialDateYMD] : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user, selectedChildId]);
 
@@ -264,7 +278,7 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
     setErrorMsg(null);
     try {
       await enrollWithCredits(selectedChildId, dates);
-      await loadCredits(selectedChildId);
+      await loadCredits(selectedChildId, dates);
 
       // odśwież request dla tego dziecka (żeby badge od razu pokazywał nowe daty)
       const fresh = await getEnrollmentRequestForChild(selectedChildId, selectedClass.id);

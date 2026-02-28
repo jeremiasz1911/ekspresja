@@ -2,7 +2,13 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { endOfMonth, parseYMD, usageKeyForPeriod,startOfMonth,monthKey  } from "@/services/time";
+import {
+  endOfMonth,
+  parseYMD,
+  usageKeyForPeriod,
+  startOfMonth,
+  monthKey,
+} from "@/services/time";
 
 type PlanDoc = {
   id: string;
@@ -108,8 +114,10 @@ async function deactivateOtherEntitlements(params: {
   childId?: string;
   planId: string;
   keepEntitlementId: string;
+  monthKeyToMatch?: string; // ✅ tylko ten sam miesiąc
 }) {
-  const { parentId, childId, planId, keepEntitlementId } = params;
+  const { parentId, childId, planId, keepEntitlementId, monthKeyToMatch } =
+    params;
 
   let q = adminDb
     .collection("entitlements")
@@ -124,7 +132,18 @@ async function deactivateOtherEntitlements(params: {
 
   snap.docs.forEach((d) => {
     if (d.id === keepEntitlementId) return;
-    batch.set(d.ref, { status: "inactive", updatedAt: Date.now() }, { merge: true });
+
+    const data: any = d.data() || {};
+    if (monthKeyToMatch) {
+      const mk = monthKey(Number(data.validFrom || 0));
+      if (mk !== monthKeyToMatch) return; // ✅ nie wyłączaj innych miesięcy
+    }
+
+    batch.set(
+      d.ref,
+      { status: "inactive", updatedAt: Date.now() },
+      { merge: true }
+    );
   });
 
   await batch.commit();
@@ -140,7 +159,13 @@ export async function finalizePaidIntent(params: {
   const entRef = adminDb.collection("entitlements").doc(intentId);
 
   let deactivateParams:
-    | { parentId: string; childId?: string; planId: string; keepEntitlementId: string }
+    | {
+        parentId: string;
+        childId?: string;
+        planId: string;
+        keepEntitlementId: string;
+        monthKeyToMatch?: string;
+      }
     | null = null;
 
   await adminDb.runTransaction(async (tx) => {
@@ -166,15 +191,15 @@ export async function finalizePaidIntent(params: {
 
     const isOneOff = intent.planId === "one_off_class";
 
-    // daty do auto-rezerwacji (np. kliknięta data w kalendarzu)
+    // daty do auto-rezerwacji
     const metaDates = Array.isArray(intent.metadata?.dates) ? intent.metadata!.dates! : [];
     const reserveDates = uniqSortedDates(
       metaDates.length ? metaDates : (intent.metadata?.dateYMD ? [intent.metadata.dateYMD] : [])
     );
 
     const anchorYMD =
-    reserveDates[0] ||
-    (intent.metadata?.dateYMD ? String(intent.metadata.dateYMD) : null);
+      reserveDates[0] ||
+      (intent.metadata?.dateYMD ? String(intent.metadata.dateYMD) : null);
 
     const anchorTs = anchorYMD ? parseYMD(anchorYMD).getTime() : paidAt;
 
@@ -188,18 +213,25 @@ export async function finalizePaidIntent(params: {
       throw new Error("Plan scope=child requires metadata.childId");
     }
 
+    // ✅ ważność entitlementu:
+    // monthly => miesiąc anchor date
+    const isMonthly = plan.validity?.kind === "monthly";
+    const entValidFrom = isMonthly ? startOfMonth(anchorTs) : paidAt;
+
+    let entValidTo = entValidFrom + 365 * 24 * 60 * 60 * 1000;
+    if (isMonthly) entValidTo = endOfMonth(anchorTs);
+    if (plan.validity?.kind === "one_off") entValidTo = entValidFrom + 60 * 24 * 60 * 60 * 1000;
+
     // jeśli rezerwujemy: pobierz klasę i zweryfikuj daty
-    let classSnap: FirebaseFirestore.DocumentSnapshot | null = null;
     let classData: ClassDoc | null = null;
 
     if ((isOneOff || wantsReserve) && classId) {
       const classRef = adminDb.collection("classes").doc(classId);
-      classSnap = await tx.get(classRef);
+      const classSnap = await tx.get(classRef);
       if (!classSnap.exists) throw new Error("Class not found");
       classData = classSnap.data() as ClassDoc;
       if (classData.isActive === false) throw new Error("Class inactive");
 
-      // walidacja dat (żeby ktoś nie wstrzyknął "dowolnej" daty w metadata)
       for (const ymd of reserveDates) {
         const ts = parseYMD(ymd).getTime();
         if (ts < Date.now()) throw new Error(`Reserved date in the past: ${ymd}`);
@@ -243,14 +275,12 @@ export async function finalizePaidIntent(params: {
       { merge: true }
     );
 
-    // 2) ONE-OFF: twórz rezerwacje (bez enrollments)
+    // 2) ONE-OFF
     if (isOneOff) {
       if (!classId || !childId || reserveDates.length === 0) {
-        // jednorazówka bez daty = nie zrobimy rezerwacji (ale płatność i tak oznaczona jako paid)
         return;
       }
 
-      // rezerwacje
       reservationRefs.forEach((r, idx) => {
         if (reservationSnaps[idx]?.exists) return;
         tx.set(
@@ -271,7 +301,6 @@ export async function finalizePaidIntent(params: {
         );
       });
 
-      // log do enrollment_requests (żeby UI miało "jakie daty są zapisane")
       if (reqRef) {
         tx.set(
           reqRef,
@@ -296,29 +325,19 @@ export async function finalizePaidIntent(params: {
       return;
     }
 
-    // 3) entitlement dla planów miesięcznych/subów (kredyty)
+    // 3) entitlement (kredyty)
     if (entSnap && !entSnap.exists) {
-      const validFrom = paidAt;
-
-      // domyślnie rok, ale miesięczne — do końca miesiąca
-      let validTo = validFrom + 365 * 24 * 60 * 60 * 1000;
-
-      if (plan.validity?.kind === "monthly") {
-        validTo = endOfMonth(validFrom);
-      }
-      if (plan.validity?.kind === "one_off") {
-        // raczej nie używamy tu, bo one_off_class obsługujemy wyżej
-        validTo = validFrom + 60 * 24 * 60 * 60 * 1000;
-      }
-
       tx.set(entRef, {
         parentId,
         childId: childId || null,
         planId: plan.id,
         type: plan.type,
         status: "active",
-        validFrom,
-        validTo,
+
+        // ✅ tu jest fix:
+        validFrom: entValidFrom,
+        validTo: entValidTo,
+
         limits: plan.limits ?? {},
         benefits: plan.benefits ?? {},
         usage: { credits: {} },
@@ -331,16 +350,17 @@ export async function finalizePaidIntent(params: {
       tx.set(entRef, { status: "active", updatedAt: Date.now() }, { merge: true });
     }
 
-    if (plan.validity?.kind === "monthly") {
+    if (isMonthly) {
       deactivateParams = {
         parentId,
         childId: childId || undefined,
         planId: plan.id,
         keepEntitlementId: entRef.id,
+        monthKeyToMatch: monthKey(entValidFrom), // ✅ nie wyłączaj innych miesięcy
       };
     }
 
-    // 4) jeśli user kupił plan i chciał od razu zapisać termin => zrób rezerwację i spal kredyt
+    // 4) auto-rezerwacja + spalanie kredytów
     if (wantsReserve && reqRef && reservationRefs.length > 0) {
       const credits = plan.limits?.credits;
       if (!credits) return;
@@ -349,12 +369,7 @@ export async function finalizePaidIntent(params: {
       const amount = Number(credits.amount || 0);
       const period = credits.period;
 
-      // plan musi obejmować te daty (ważność)
-      // (ważność entRef powstaje na podstawie paidAt, więc tu logicznie to weryfikujemy)
-      const entValidFrom = paidAt;
-      const entValidTo =
-        plan.validity?.kind === "monthly" ? endOfMonth(paidAt) : (paidAt + 365 * 24 * 60 * 60 * 1000);
-
+      // ✅ ważność planu liczona od entValidFrom/entValidTo
       for (const ymd of reserveDates) {
         const ts = parseYMD(ymd).getTime();
         if (ts < entValidFrom || ts > entValidTo) {
@@ -362,7 +377,6 @@ export async function finalizePaidIntent(params: {
         }
       }
 
-      // rezerwacje
       const toCreate = reservationRefs.filter((_, idx) => !reservationSnaps[idx]?.exists);
       toCreate.forEach((r) => {
         tx.set(
@@ -384,7 +398,6 @@ export async function finalizePaidIntent(params: {
         );
       });
 
-      // enrollment_requests log
       tx.set(
         reqRef,
         {
@@ -404,7 +417,6 @@ export async function finalizePaidIntent(params: {
         { merge: true }
       );
 
-      // spal kredyty tylko jeśli coś stworzyliśmy
       if (!unlimited && amount > 0 && toCreate.length > 0) {
         const burnByKey: Record<string, number> = {};
         for (const r of toCreate) {

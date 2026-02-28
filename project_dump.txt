@@ -1,0 +1,176 @@
+
+=== app ===
+app
+├── (auth)
+│   ├── complete-profile
+│   │   └── page.tsx
+│   ├── layout.tsx
+│   ├── login
+│   │   └── page.tsx
+│   └── register
+│       └── page.tsx
+├── (dashboard)
+│   ├── dashboard
+│   │   ├── children
+│   │   │   └── page.tsx
+│   │   ├── classes
+│   │   │   └── page.tsx
+│   │   ├── page.tsx
+│   │   ├── payments
+│   │   │   └── page.tsx
+│   │   └── profile
+│   │       └── page.tsx
+│   └── layout.tsx
+├── (public)
+│   └── page.tsx
+├── admin
+│   ├── classes
+│   │   └── page.tsx
+│   ├── groups
+│   │   └── page.tsx
+│   ├── layout.tsx
+│   ├── plans
+│   │   └── page.tsx
+│   └── users
+│       └── page.tsx
+├── api
+│   ├── admin
+│   │   └── seed-plans
+│   │       └── route.ts
+│   ├── enrollments
+│   │   └── consume
+│   │       └── route.ts
+│   ├── payments
+│   │   └── tpay
+│   │       ├── create
+│   │       │   └── route.ts
+│   │       └── start
+│   │           └── route.ts
+│   └── tpay
+│       └── webhook
+│           └── route.ts
+├── favicon.ico
+├── globals.css
+├── layout.tsx
+└── page.tsx
+
+28 directories, 25 files
+
+=== components ===
+components
+├── admin
+│   ├── AdminLayout.tsx
+│   ├── AdminSidebar.tsx
+│   ├── CreateClassDialog.tsx
+│   ├── ProviderIcon.tsx
+│   ├── SelectChildrenModal.tsx
+│   ├── UserDetailsModal.tsx
+│   └── WeekCalendar.tsx
+├── auth
+│   ├── AdminGate.tsx
+│   ├── AuthGate.tsx
+│   └── AuthProvider.tsx
+├── billing
+│   ├── CreditsBadge.tsx
+│   ├── CreditsByChildPanel.tsx
+│   ├── OrdersList.tsx
+│   └── PurchasePlanModal.tsx
+├── classes
+│   ├── AvailableClassesList.tsx
+│   ├── ChildFilterSelect.tsx
+│   ├── MyEnrollmentsList.tsx
+│   ├── PaymentReturnBanner.tsx
+│   └── ScheduleCalendar.tsx
+├── dashboard
+│   ├── DashboardLayout.tsx
+│   ├── Sidebar.tsx
+│   ├── Topbar.tsx
+│   └── UserMenu.tsx
+├── profile
+│   └── ParentProfileForm.tsx
+├── ui
+│   ├── alert-dialog.tsx
+│   ├── alert.tsx
+│   ├── avatar.tsx
+│   ├── badge.tsx
+│   ├── button.tsx
+│   ├── card.tsx
+│   ├── checkbox.tsx
+│   ├── command.tsx
+│   ├── ConfirmModal.tsx
+│   ├── dialog.tsx
+│   ├── dropdown-menu.tsx
+│   ├── FieldError.tsx
+│   ├── input.tsx
+│   ├── NumberField.tsx
+│   ├── popover.tsx
+│   ├── progress.tsx
+│   ├── radio-group.tsx
+│   ├── select.tsx
+│   ├── separator.tsx
+│   ├── skeleton.tsx
+│   ├── tabs.tsx
+│   └── TextField.tsx
+└── user-classes
+    ├── AvailableClassesTab.tsx
+    ├── ClassesTabs.tsx
+    ├── CreditsUsageModal.tsx
+    ├── EnrollModal.tsx
+    └── UserWeekCalendar.tsx
+
+9 directories, 51 files
+
+=== services ===
+services
+├── admin-users.service.ts
+├── billing-finalize.service.ts
+├── children.service.ts
+├── classes.service.ts
+├── enrollment-requests.service.ts
+├── enrollments.service.ts
+├── entitlements-guard.service.ts
+├── entitlements.service.ts
+├── groups.service.ts
+├── occurrences.ts
+├── payment-intents.service.ts
+├── payments.service.ts
+├── plans.service.ts
+├── presence.service.ts
+├── profile.service.ts
+├── registration.service.ts
+├── reservations.service.ts
+├── role.service.ts
+├── seed-plans.ts
+├── time.ts
+├── tpay-openapi.service.ts
+├── tpay.service.ts
+├── upload.service.ts
+└── user-profile.service.ts
+
+1 directory, 24 files
+
+=== types ===
+types
+├── admin.ts
+├── auth.ts
+├── billing.ts
+├── child.ts
+├── children.ts
+├── classes.ts
+├── classOccurrences.ts
+├── enrollment-request.ts
+├── enrollments.ts
+├── entitlements.ts
+├── events.ts
+├── groups.ts
+├── index.ts
+├── payment-intents.ts
+├── payments.ts
+├── plans.ts
+├── presence.ts
+├── profile.ts
+├── schedule.ts
+└── user.ts
+
+1 directory, 20 files
+
