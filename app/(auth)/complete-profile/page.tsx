@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ParentProfileForm } from "@/components/profile/ParentProfileForm";
 import type { ParentFormData } from "@/types/profile";
-import { createParentAndChildren } from "@/services/registration.service";
+import { createParentAndChildren } from "@/features/profile/children";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangleIcon } from "lucide-react"
 

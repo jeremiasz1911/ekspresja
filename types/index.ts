@@ -11,3 +11,4 @@ export * from "./user";
 export * from "./events";
 export * from "./enrollments";
 export * from "./enrollment-request";
+export * from "./reservations";

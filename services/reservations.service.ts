@@ -6,18 +6,9 @@ import {
   where,
   orderBy,
 } from "firebase/firestore";
+import type { Reservation } from "@/types/reservations";
 
-export type Reservation = {
-  id: string;
-  parentId: string;
-  childId: string;
-  classId: string;
-  dateYMD: string; // YYYY-MM-DD
-  status: "active" | "cancelled";
-  paymentMethod?: "credits" | "one_off" | "online";
-  entitlementId?: string;
-  createdAt?: number;
-};
+export type { Reservation } from "@/types/reservations";
 
 export async function getParentReservationsInRange(params: {
   parentId: string;

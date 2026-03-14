@@ -5,15 +5,15 @@ import type { Class, EnrollmentRequest } from "@/types";
 import { collection, getDocsFromServer, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
  
-import { usageKeyForPeriod } from "@/services/time";
+import { periodKeyFromTs } from "@/features/billing";
 import { consumeEnrollmentCredits } from "@/features/classes";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getParentProfile } from "@/services/user-profile.service";
+import { getParentProfile } from "@/features/profile/children";
 import {
   createEnrollmentRequest,
   getEnrollmentRequestForChild,
   withdrawEnrollmentRequest,
-} from "@/services/enrollment-requests.service";
+} from "@/features/classes";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -151,7 +151,7 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
       if (!unlimited && total <= 0) return;
 
       // ✅ klucz okresu liczony z DATY KLIKNIĘTEGO TERMINU (a nie z "teraz")
-      const key = usageKeyForPeriod(period, baseTs);
+      const key = periodKeyFromTs(period, baseTs);
       const used = Number(data?.usage?.credits?.[key] || 0);
       const remaining = unlimited ? 999999 : Math.max(0, total - used);
 

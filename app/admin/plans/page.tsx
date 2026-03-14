@@ -1,6 +1,6 @@
 "use client";
 
-import { seedDefaultPlans } from "@/services/seed-plans";
+import { seedDefaultPlans } from "@/features/billing";
 
 export default function AdminPlansSeedPage() {
   return (

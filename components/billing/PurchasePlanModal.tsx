@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { Plan } from "@/types/plans";
 import type { PurchaseContext } from "@/types/billing";
 
-import { getPlans } from "@/services/plans.service";
-import { createPaymentIntent } from "@/services/payment-intents.service";
+import { getPlans } from "@/features/billing";
+import { createPaymentIntent } from "@/features/billing";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";

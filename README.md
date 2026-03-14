@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ekspresja Studio
 
-## Getting Started
+Aplikacja Next.js (App Router) + TypeScript + Firebase (Auth/Firestore/Admin) + TPay OpenAPI dla zapiswww rodzicwww i dzieci na zajechocia cykliczne.
 
-First, run the development server:
+## Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Data model (Firestore)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `users/{uid}`  
+  Profil rodzica/admina (dane konta, rola, kontakt).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `children/{childId}`  
+  Dziecko przypisane do rodzica (`parentId`), dane wieku i aktywnoci.
 
-## Learn More
+- `classes/{classId}`  
+  Definicja zajecho cyklicznych (`weekday`, `startTime`, `recurrence`, `capacity`).
 
-To learn more about Next.js, take a look at the following resources:
+- `enrollment_requests/{classId_childId}`  
+  Wniosek zapisu (pending/approved/rejected), metoda patnoci i daty.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `payment_intents/{intentId}`  
+  Intencja patnoci (source of truth dla flow TPay): status, metadata (`classId`, `childId`, `dateYMD/dates`).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `entitlements/{entitlementId}`  
+  Uprawnienia po opaceniu planu: `validFrom/validTo`, `limits.credits`, `usage.credits`.
 
-## Deploy on Vercel
+- `reservations/{childId__classId__dateYMD}`  
+  Rezerwacja per konkretna data zajecho; klucz idempotentny per dziecko/zajechocia/data.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `plans/{planId}`  
+  Oferta komercyjna: one-off, pakiety miesiechoczne, subskrypcje, limity i benefity.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Billing invariants (must keep)
+
+- Flow patnoci: `create -> webhook -> finalizePaidIntent`.
+- Kredyty spalaj siecho wg `periodKey` wyliczanego z **daty terminu**, nie z "teraz".
+- Rezerwacja przyszej daty jest dozwolona tylko przy aktywnym `entitlement` dla tej daty.
+
+## Refactor quality checks
+
+nvm install 18dym kroku:
+  - `git status -sb`
+  - `npm run build`
+
+## Suggested unit tests (credits/validity)
+
+1.  liczy miesic na podstawie daty terminu (`YYYY-MM-DD`).
+2. `validateDateInEntitlement` odrzuca daty poza `validFrom/validTo`.
+3. `consumeCredits` agreguje spalanie per klucz okresu przy wielu datach.
+4. Brak podwjjjnego spalania przy idempotentnej rezerwacji tej samej daty.
+5. Rezerwacja przyszej daty przechodzi tylko gdy plan/entitlement obejmuje ten dzie.

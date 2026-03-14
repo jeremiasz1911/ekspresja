@@ -1,7 +1,7 @@
 // app/api/payments/tpay/start/route.ts
 import { NextRequest } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
-import { buildTpayForm } from "@/services/tpay.service";
+import { buildTpayForm } from "@/features/billing/commands/buildTpayForm";
 
 export async function GET(req: NextRequest) {
   const intentId = req.nextUrl.searchParams.get("intentId");

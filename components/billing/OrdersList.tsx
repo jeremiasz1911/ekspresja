@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getPlans } from "@/services/plans.service";
-import { getParentProfile } from "@/services/user-profile.service";
+import { getParentPaymentIntents, getPlans } from "@/features/billing";
+import { getParentProfile } from "@/features/profile/children";
 
 import type { PaymentIntent } from "@/types/payment-intents";
 import type { Plan } from "@/types/plans";
@@ -74,19 +72,14 @@ export function OrdersList({ refreshTick = 0 }: Props) {
         const [plansList, profile, snap] = await Promise.all([
           getPlans(),
           getParentProfile(user.uid),
-          getDocs(query(collection(db, "payment_intents"), where("parentId", "==", user.uid))),
+          getParentPaymentIntents(user.uid),
         ]);
 
         if (!alive) return;
 
-        const list = snap.docs
-          .map((d) => ({ id: d.id, ...(d.data() as any) }))
-          .map((x) => x as any)
-          .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
-
         setPlans(plansList ?? []);
         setChildren((profile?.children as Child[]) ?? []);
-        setItems(list);
+        setItems(snap as Array<PaymentIntent & { finalizedAt?: number; providerTitle?: string }>);
       } catch (e: any) {
         if (!alive) return;
         setError(String(e?.message || e));

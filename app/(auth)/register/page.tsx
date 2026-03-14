@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import type { ChildInput } from "@/types/auth";
-import { createParentAndChildren } from "@/services/registration.service";
+import { createParentAndChildren } from "@/features/profile/children";
 
 function emptyChild(): ChildInput {
   return { firstName: "", lastName: "", ageYears: "" };

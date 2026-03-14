@@ -1,7 +1,7 @@
 // app/api/payments/tpay/create/route.ts
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
-import { createTpayTransaction } from "@/services/tpay-openapi.service";
+import { createTpayTransaction } from "@/features/billing/commands/createTpayTransaction";
 
 function maskEmail(s?: string) {
   if (!s) return "EMPTY";

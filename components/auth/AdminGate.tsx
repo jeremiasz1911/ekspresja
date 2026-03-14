@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getUserRole } from "@/services/role.service";
+import { getUserRole } from "@/features/admin";
 
 export function AdminGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

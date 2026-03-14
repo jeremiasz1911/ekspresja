@@ -4,7 +4,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import {
   finalizePaidIntent,
   markIntentFailed,
-} from "@/services/billing-finalize.service";
+} from "@/features/billing/commands/finalizePaidIntent";
 
 export const runtime = "nodejs";
 

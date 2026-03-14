@@ -10,7 +10,7 @@ import {
   getParentReservationsInRange,
   type Reservation,
 } from "@/features/classes";
-import { getChildrenForParent } from "@/services/children.service";
+import { getChildrenForParent } from "@/features/profile/children";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,5 @@
+export type { Child } from "./child";
+
 export type ChildWithParent = {
   id: string;
   firstName: string;
@@ -6,10 +8,3 @@ export type ChildWithParent = {
   parentId: string;
   parentName: string;
 };
-export type Child = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  ageYears: number;
-  parentId: string;
-}

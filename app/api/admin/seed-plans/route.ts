@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { seedDefaultPlans } from "@/services/seed-plans";
+import { seedDefaultPlans } from "@/features/billing";
 
 export async function POST() {
   try {
