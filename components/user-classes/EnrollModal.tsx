@@ -6,6 +6,7 @@ import { collection, getDocsFromServer, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase/client";
  
 import { usageKeyForPeriod } from "@/services/time";
+import { consumeEnrollmentCredits } from "@/features/classes";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getParentProfile } from "@/services/user-profile.service";
 import {
@@ -222,18 +223,12 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
   async function enrollWithCredits(childId: string, dates: string[]) {
     if (!user || !selectedClass) return;
     const token = await user.getIdToken();
-
-    const res = await fetch("/api/enrollments/consume", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ classId: selectedClass.id, childId, dates }),
+    const data = await consumeEnrollmentCredits({
+      token,
+      classId: selectedClass.id,
+      childId,
+      dates,
     });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.error || "CREDITS_ENROLL_FAILED");
 
     if (typeof data?.remaining === "number") setCreditsRemaining(data.remaining);
   }

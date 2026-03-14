@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { PaymentReturnBanner } from "@/components/classes/PaymentReturnBanner";
+import { PaymentReturnBanner } from "@/components/user-classes/PaymentReturnBanner";
 import { ClassesTabs } from "@/components/user-classes/ClassesTabs";
 
 export default function ClassesPage() {

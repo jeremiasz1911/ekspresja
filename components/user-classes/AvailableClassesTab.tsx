@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getActiveClasses } from "@/services/classes.service";
-import type { Class, Child } from "@/types";
+import { getActiveClasses } from "@/features/classes";
+import type { Class } from "@/types";
 import { Button } from "@/components/ui/button";
 import { EnrollModal } from "./EnrollModal";
 
