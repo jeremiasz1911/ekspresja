@@ -14,7 +14,7 @@ import crypto from "crypto";
  * 5 – krótkie crc (cyfry)
  * 6 – FAKE secret (TEST)
  */
-const TPAY_MD5_VARIANT = 3; // ⬅️ ZMIENIAJ TYLKO TO (0–6)
+const TPAY_MD5_VARIANT: 0 | 1 | 2 | 3 | 4 | 5 | 6 = 3; // ⬅️ ZMIENIAJ TYLKO TO (0–6)
 
 /**
  * =====================================================

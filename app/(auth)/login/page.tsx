@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,7 +27,7 @@ function mapFirebaseError(code?: string) {
   }
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/dashboard";
@@ -145,5 +145,13 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="text-sm text-gray-500">Ładowanie…</div>}>
+      <LoginPageContent />
+    </Suspense>
   );
 }
