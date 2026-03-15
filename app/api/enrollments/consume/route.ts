@@ -2,7 +2,11 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { parseYMD, usageKeyForPeriod } from "@/services/time";
+import { parseYMD } from "@/services/time";
+import {
+  consumeCredits as buildCreditsByPeriod,
+  validateDateInEntitlement,
+} from "@/features/billing";
 
 export const runtime = "nodejs";
 
@@ -167,8 +171,11 @@ export async function POST(req: Request) {
       .filter((e) => {
         // entitlement musi obejmować WSZYSTKIE requestedDates
         return requestedDates.every((ymd) => {
-          const ts = parseYMD(ymd).getTime();
-          return ts >= Number(e.validFrom || 0) && ts <= Number(e.validTo || 0);
+          return validateDateInEntitlement(
+            ymd,
+            Number(e.validFrom || 0),
+            Number(e.validTo || 0)
+          );
         });
       });
 
@@ -201,12 +208,7 @@ export async function POST(req: Request) {
       if (!unlimited && amount <= 0) continue;
 
       // ile potrzeba spalić w danym okresie (kluczu)
-      const needByKey: Record<string, number> = {};
-      for (const ymd of requestedDates) {
-        const ts = parseYMD(ymd).getTime();
-        const k = usageKeyForPeriod(period, ts);
-        needByKey[k] = (needByKey[k] || 0) + 1;
-      }
+      const needByKey = buildCreditsByPeriod({ period, dates: requestedDates });
 
       // stan użycia
       const usedMap = item.usage?.credits || {};
@@ -264,8 +266,13 @@ export async function POST(req: Request) {
 
       // ✅ ważność w transakcji
       for (const ymd of requestedDates) {
-        const ts = parseYMD(ymd).getTime();
-        if (ts < Number(ent2.validFrom || 0) || ts > Number(ent2.validTo || 0)) {
+        if (
+          !validateDateInEntitlement(
+            ymd,
+            Number(ent2.validFrom || 0),
+            Number(ent2.validTo || 0)
+          )
+        ) {
           throw new Error("Entitlement not valid for date " + ymd);
         }
       }
@@ -285,12 +292,10 @@ export async function POST(req: Request) {
       if (!unlimited && amount <= 0) throw new Error("No credits limit found");
 
       // burn map for only the NEW reservations
-      const burnByKey: Record<string, number> = {};
-      for (const r of toCreate) {
-        const ts = parseYMD(r.ymd).getTime();
-        const k = usageKeyForPeriod(period, ts);
-        burnByKey[k] = (burnByKey[k] || 0) + 1;
-      }
+      const burnByKey = buildCreditsByPeriod({
+        period,
+        dates: toCreate.map((r) => r.ymd),
+      });
 
       // check credits again with current usage
       const usedMap = ent2.usage?.credits || {};

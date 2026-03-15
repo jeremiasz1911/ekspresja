@@ -77,8 +77,7 @@ export function CreditsByChildPanel({ refreshTick = 0 }: Props) {
 
         const now = Date.now();
 
-        const entList = entsSnap
-          .filter((e) => now >= Number(e.validFrom || 0) && now <= Number(e.validTo || 0));
+        const entList = entsSnap.filter((e) => now <= Number(e.validTo || 0));
 
         setChildren((profile?.children as Child[]) ?? []);
         setPlans(plansList ?? []);
@@ -167,20 +166,25 @@ export function CreditsByChildPanel({ refreshTick = 0 }: Props) {
           <CardTitle>Kredyty i subskrypcje</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Brak aktywnych pakietów/subskrypcji.
+          Brak aktywnych ani nadchodzących pakietów/subskrypcji.
         </CardContent>
       </Card>
     );
   }
 
   function EntRow({ e }: { e: Entitlement }) {
+    const now = Date.now();
     const plan = plansById.get(e.planId);
     const credits = e.limits?.credits;
     const unlimited = Boolean(credits?.unlimited);
     const amount = Number(credits?.amount || 0);
     const period = String(credits?.period || "month");
+    const isFuture = now < Number(e.validFrom || 0);
 
-    const currentPeriodKey = periodKeyFromTs(period, Date.now());
+    const currentPeriodKey = periodKeyFromTs(
+      period,
+      isFuture ? Number(e.validFrom || now) : now
+    );
     const used = Number(e.usage?.credits?.[currentPeriodKey] || 0);
     const total = unlimited ? Infinity : amount;
     const remaining = unlimited ? Infinity : Math.max(0, amount - used);
@@ -204,6 +208,7 @@ export function CreditsByChildPanel({ refreshTick = 0 }: Props) {
 
           <div className="flex items-center gap-2 shrink-0">
             {card && <Badge variant={card === "GOLD" ? "default" : "secondary"}>{card}</Badge>}
+            {isFuture && <Badge variant="secondary">Aktywna od {fmtDate(e.validFrom)}</Badge>}
             <Badge variant="outline">{currentPeriodKey}</Badge>
           </div>
         </div>

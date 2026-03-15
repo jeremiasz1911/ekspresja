@@ -22,8 +22,9 @@ export async function createEnrollmentRequest(params: {
   childId: string;
   classId: string;
   paymentMethod: PaymentMethod;
+  declarationNote?: string;
 }) {
-  const { parentId, childId, classId, paymentMethod } = params;
+  const { parentId, childId, classId, paymentMethod, declarationNote } = params;
 
   // zabezpieczenie: czy nie ma już requesta
   const existing = await getDocs(
@@ -39,12 +40,20 @@ export async function createEnrollmentRequest(params: {
     throw new Error("Zgłoszenie już istnieje dla tego dziecka i zajęć.");
   }
 
+  const note = String(declarationNote || "").trim();
   await addDoc(collection(db, "enrollment_requests"), {
     parentId,
     childId,
     classId,
     paymentMethod,
     status: paymentMethod === "online" ? "approved" : "pending",
+    ...(paymentMethod === "declaration"
+      ? {
+          declarationAccepted: true,
+          declarationAcceptedAt: Date.now(),
+          ...(note ? { declarationNote: note } : {}),
+        }
+      : {}),
     createdAt: Date.now(),
     createdAtServer: serverTimestamp(),
   });

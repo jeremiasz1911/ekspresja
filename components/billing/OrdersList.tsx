@@ -194,6 +194,9 @@ export function OrdersList({ refreshTick = 0 }: Props) {
             const status = String(x.status || "");
             const metaChildId = (x.metadata?.childId || x.childId || "") as string;
             const who = metaChildId ? childNameById.get(metaChildId) : null;
+            const activationDateYMD = x.metadata?.activationDateYMD;
+            const isSubscriptionPlan =
+              plan?.type === "subscription_standard" || plan?.type === "subscription_gold";
 
             const isPayable = status !== "paid" && status !== "cancelled";
             const isPaying = payingId === x.id;
@@ -221,6 +224,11 @@ export function OrdersList({ refreshTick = 0 }: Props) {
                         Opłacono: {fmtDateTime(x.paidAt)} • Finalizacja:{" "}
                         {fmtDateTime((x as any).finalizedAt)}
                       </div>
+                      {isSubscriptionPlan && activationDateYMD && (
+                        <div className="text-xs text-muted-foreground">
+                          Aktywacja subskrypcji: <span className="font-medium">{activationDateYMD}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col items-end gap-2 shrink-0">

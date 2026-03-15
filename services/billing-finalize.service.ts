@@ -2,10 +2,10 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { consumeCredits as buildCreditsByPeriod } from "@/features/billing";
 import {
   endOfMonth,
   parseYMD,
-  usageKeyForPeriod,
   startOfMonth,
   monthKey,
 } from "@/services/time";
@@ -45,6 +45,7 @@ type PaymentIntentDoc = {
     enrollNow?: boolean;
     dateYMD?: string;
     dates?: string[];
+    activationDateYMD?: string;
   };
 };
 
@@ -197,7 +198,12 @@ export async function finalizePaidIntent(params: {
       metaDates.length ? metaDates : (intent.metadata?.dateYMD ? [intent.metadata.dateYMD] : [])
     );
 
+    const activationDateYMD = intent.metadata?.activationDateYMD
+      ? String(intent.metadata.activationDateYMD)
+      : null;
+
     const anchorYMD =
+      activationDateYMD ||
       reserveDates[0] ||
       (intent.metadata?.dateYMD ? String(intent.metadata.dateYMD) : null);
 
@@ -418,12 +424,10 @@ export async function finalizePaidIntent(params: {
       );
 
       if (!unlimited && amount > 0 && toCreate.length > 0) {
-        const burnByKey: Record<string, number> = {};
-        for (const r of toCreate) {
-          const ts = parseYMD(r.ymd).getTime();
-          const k = usageKeyForPeriod(period, ts);
-          burnByKey[k] = (burnByKey[k] || 0) + 1;
-        }
+        const burnByKey = buildCreditsByPeriod({
+          period,
+          dates: toCreate.map((r) => r.ymd),
+        });
 
         const incObj: Record<string, any> = {};
         for (const [k, burn] of Object.entries(burnByKey)) {

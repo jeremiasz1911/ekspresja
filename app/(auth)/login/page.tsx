@@ -114,7 +114,15 @@ function LoginPageContent() {
         </div>
 
         <div>
-          <label className="text-sm">Hasło</label>
+          <div className="flex items-center justify-between">
+            <label className="text-sm">Hasło</label>
+            <Link
+              href={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+              className="text-xs underline text-gray-600 hover:text-gray-900"
+            >
+              Nie pamiętasz hasła?
+            </Link>
+          </div>
           <input
             className="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring"
             value={password}

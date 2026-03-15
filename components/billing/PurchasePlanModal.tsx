@@ -13,6 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+function firstDayOfNextMonthYMD() {
+  const d = new Date();
+  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1, 12, 0, 0, 0);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
+}
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -25,6 +31,7 @@ export function PurchasePlanModal({ open, onClose, context, onSuccess }: Props) 
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [activationTiming, setActivationTiming] = useState<"current" | "next">("current");
   const [loading, setLoading] = useState(false);
 
   const selectedPlan = useMemo(
@@ -32,11 +39,20 @@ export function PurchasePlanModal({ open, onClose, context, onSuccess }: Props) 
     [plans, selectedPlanId]
   );
 
+  const canStartNextMonth =
+    selectedPlan?.type === "subscription_standard" ||
+    selectedPlan?.type === "subscription_gold";
+
   useEffect(() => {
     if (!open) return;
     setSelectedPlanId(null);
+    setActivationTiming("current");
     getPlans().then((all) => setPlans(all.filter((p) => p.isActive)));
   }, [open]);
+
+  useEffect(() => {
+    if (!canStartNextMonth) setActivationTiming("current");
+  }, [canStartNextMonth]);
 
   async function handlePurchase() {
     if (!selectedPlanId || !user) return;
@@ -52,8 +68,15 @@ export function PurchasePlanModal({ open, onClose, context, onSuccess }: Props) 
 
       const dateYMD = (context as any).dateYMD ? String((context as any).dateYMD) : null;
 
-      // domyślnie: jak kupujesz z poziomu terminu zajęć => chcesz od razu zapisać ten termin
-      const enrollNow = (context as any).enrollNow ?? (isClass ? true : false);
+      const enrollNow =
+        activationTiming === "next"
+          ? false
+          : ((context as any).enrollNow ?? (isClass ? true : false));
+
+      const activationDateYMD =
+        canStartNextMonth && activationTiming === "next"
+          ? firstDayOfNextMonthYMD()
+          : null;
 
       const metadata = isClass
         ? {
@@ -62,8 +85,11 @@ export function PurchasePlanModal({ open, onClose, context, onSuccess }: Props) 
             enrollNow: Boolean(enrollNow),
             ...(dateYMD ? { dateYMD } : {}),
             ...(dates ? { dates } : {}),
+            ...(activationDateYMD ? { activationDateYMD } : {}),
           }
-        : {};
+        : {
+            ...(activationDateYMD ? { activationDateYMD } : {}),
+          };
 
       const intentId = await createPaymentIntent({
         parentId: user.uid,
@@ -107,6 +133,35 @@ export function PurchasePlanModal({ open, onClose, context, onSuccess }: Props) 
             </button>
           ))}
         </div>
+
+        {canStartNextMonth && (
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="text-sm font-medium">Aktywacja subskrypcji</div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={activationTiming === "current" ? "default" : "outline"}
+                onClick={() => setActivationTiming("current")}
+              >
+                Od teraz
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={activationTiming === "next" ? "default" : "outline"}
+                onClick={() => setActivationTiming("next")}
+              >
+                Od następnego miesiąca
+              </Button>
+            </div>
+            {activationTiming === "next" && (
+              <div className="text-xs text-muted-foreground">
+                Subskrypcja rozpocznie się od {firstDayOfNextMonthYMD()}.
+              </div>
+            )}
+          </div>
+        )}
 
         <Button className="w-full" disabled={!selectedPlanId || loading} onClick={handlePurchase}>
           {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
