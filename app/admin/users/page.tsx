@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getAdminUsers } from "@/services/admin-users.service";
+import { getAdminUsers } from "@/features/admin";
 import type { AdminUser } from "@/types/admin";
 import { UserDetailsModal } from "@/components/admin/UserDetailsModal";
 import { ProviderIcon } from "@/components/admin/ProviderIcon";

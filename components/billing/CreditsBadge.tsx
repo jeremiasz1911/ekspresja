@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { usageKeyForPeriod } from "@/services/time";
+import { periodKeyFromTs } from "@/features/billing";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -67,7 +67,7 @@ export function CreditsBadge({ dates }: { dates?: string[] }) {
 
         if (!unlimited && total <= 0) continue;
 
-        const key = usageKeyForPeriod(period, baseTs);
+        const key = periodKeyFromTs(period, baseTs);
         const used = Number(data?.usage?.credits?.[key] || 0);
         const remaining = unlimited ? 999999 : Math.max(0, total - used);
 

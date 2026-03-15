@@ -10,10 +10,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ProviderIcon } from "@/components/admin/ProviderIcon";
-import { getUserProfile, updateUserProfile } from "@/services/profile.service";
+import { getUserProfile, updateUserProfile } from "@/features/profile/children";
 import type { ParentFormData } from "@/types/profile";
 import { ParentProfileForm } from "@/components/profile/ParentProfileForm";
-import { deleteUser } from "@/services/admin-users.service";
+import { deleteUser } from "@/features/admin";
 import { cn } from "@/lib/utils";
 
 type Props = {

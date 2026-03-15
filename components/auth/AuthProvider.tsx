@@ -12,7 +12,7 @@ import type { User } from "firebase/auth";
 import { auth, db } from "@/lib/firebase/client";
 import type { AuthState } from "@/types/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { heartbeat, setOffline, setOnline } from "@/services/presence.service";
+import { heartbeat, setOffline, setOnline } from "@/features/auth";
 
 const AuthContext = createContext<AuthState | null>(null);
 

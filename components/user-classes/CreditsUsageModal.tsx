@@ -92,6 +92,10 @@ function prettyLabel(ymd: string) {
   return `${dow} ${dm}`;
 }
 
+function monthLabel(ts: number) {
+  return new Date(ts).toLocaleDateString("pl-PL", { month: "long", year: "numeric" });
+}
+
 function occurrencesInMonth(c: Class, baseTs = Date.now()) {
    const base = new Date(baseTs);
   const now = new Date(Date.now());
@@ -120,6 +124,7 @@ type Props = {
   creditsRemaining: number;
   onConfirm: (dates: string[]) => void;
   initialDateYMD?: string | null; // klik z kalendarza
+  blockedDates?: string[]; // już zarezerwowane terminy
 };
 
 export function CreditsUsageModal({
@@ -129,6 +134,7 @@ export function CreditsUsageModal({
   creditsRemaining,
   onConfirm,
   initialDateYMD = null,
+  blockedDates = [],
 }: Props) {
  
   const baseTs = useMemo(() => {
@@ -136,16 +142,23 @@ export function CreditsUsageModal({
   }, [initialDateYMD]);
 
   const dates = useMemo(() => occurrencesInMonth(selectedClass, baseTs), [selectedClass, baseTs]);
+  const blockedSet = useMemo(() => new Set(blockedDates), [blockedDates]);
+  const availableDates = useMemo(
+    () => dates.filter((d) => !blockedSet.has(d)),
+    [dates, blockedSet]
+  );
 
-
-  const nearest = useMemo(() => (dates[0] ? [dates[0]] : []), [dates]);
-  const maxAllCount = Math.min(dates.length, Math.max(0, creditsRemaining));
-  const allUpToLimit = useMemo(() => dates.slice(0, maxAllCount), [dates, maxAllCount]);
+  const nearest = useMemo(() => (availableDates[0] ? [availableDates[0]] : []), [availableDates]);
+  const maxAllCount = Math.min(availableDates.length, Math.max(0, creditsRemaining));
+  const allUpToLimit = useMemo(
+    () => availableDates.slice(0, maxAllCount),
+    [availableDates, maxAllCount]
+  );
   
   const defaultSelection = useMemo(() => {
-    if (initialDateYMD && dates.includes(initialDateYMD)) return [initialDateYMD];
+    if (initialDateYMD && availableDates.includes(initialDateYMD)) return [initialDateYMD];
     return nearest;
-  }, [initialDateYMD, dates, nearest]);
+  }, [initialDateYMD, availableDates, nearest]);
 
   const [manual, setManual] = useState<string[]>(defaultSelection);
 
@@ -180,7 +193,12 @@ export function CreditsUsageModal({
         <Card className="border-muted">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-sm text-muted-foreground">Wybierz terminy do rezerwacji</div>
+              <div>
+                <div className="text-sm text-muted-foreground">Wybierz terminy do rezerwacji</div>
+                <div className="text-xs text-muted-foreground capitalize">
+                  Miesiąc: {monthLabel(baseTs)}
+                </div>
+              </div>
               <Badge variant={creditsRemaining > 0 ? "default" : "secondary"}>
                 Kredyty: {creditsRemaining}
               </Badge>
@@ -188,9 +206,11 @@ export function CreditsUsageModal({
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {dates.length === 0 ? (
+            {availableDates.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                Brak terminów w tym miesiącu (albo wszystkie są w przeszłości).
+                {dates.length === 0
+                  ? "Brak terminów w tym miesiącu (albo wszystkie są w przeszłości)."
+                  : "Wszystkie dostępne terminy w tym miesiącu są już zarezerwowane."}
               </div>
             ) : (
               <>
@@ -215,7 +235,7 @@ export function CreditsUsageModal({
                   >
                     <span>Wszystkie terminy w tym miesiącu</span>
                     <span className="text-xs text-muted-foreground">
-                      {allUpToLimit.length} / {dates.length}
+                      {allUpToLimit.length} / {availableDates.length}
                     </span>
                   </Button>
 
@@ -235,7 +255,7 @@ export function CreditsUsageModal({
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    {dates.map((d) => {
+                    {availableDates.map((d) => {
                       const checked = manual.includes(d);
                       const disabled = !checked && manual.length >= creditsRemaining;
 

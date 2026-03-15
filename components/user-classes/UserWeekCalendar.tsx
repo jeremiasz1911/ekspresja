@@ -4,10 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { Class } from "@/types/classes";
 import type { Enrollment, Child } from "@/types";
 
-import { getActiveClasses } from "@/services/classes.service";
-import { getParentEnrollments } from "@/services/enrollments.service";
-import { getParentReservationsInRange, type Reservation } from "@/services/reservations.service";
-import { getChildrenForParent } from "@/services/children.service";
+import {
+  getActiveClasses,
+  getParentEnrollments,
+  getParentReservationsInRange,
+  type Reservation,
+} from "@/features/classes";
+import { getChildrenForParent } from "@/features/profile/children";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";

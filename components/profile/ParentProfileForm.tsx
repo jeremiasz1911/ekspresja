@@ -2,8 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ParentFormData } from "@/types/profile";
 import type { ChildInput } from "@/types/auth";
-import { upsertChildrenForParent } from "@/services/children.service";
-//import { updateParentProfile } from "@/services/user-profile.service"; 
+import { upsertChildrenForParent } from "@/features/profile/children";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

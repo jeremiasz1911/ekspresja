@@ -41,6 +41,7 @@ export type PaymentIntent = {
 
     dateYMD?: string;
     dates?: string[];
+    activationDateYMD?: string;
   };
 
   createdAt: number;

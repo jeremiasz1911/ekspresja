@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getParentProfile } from "@/services/user-profile.service";
-import { getPlans } from "@/services/plans.service";
-import { usageKeyForPeriod } from "@/services/time";
+import { getParentProfile } from "@/features/profile/children";
+import { getActiveEntitlements, getPlans } from "@/features/billing";
+import { periodKeyFromTs } from "@/features/billing";
 
 import type { Entitlement } from "@/types/entitlements";
 import type { Plan } from "@/types/plans";
@@ -72,23 +70,14 @@ export function CreditsByChildPanel({ refreshTick = 0 }: Props) {
         const [profile, plansList, entsSnap] = await Promise.all([
           getParentProfile(user.uid),
           getPlans(),
-          getDocs(
-            query(
-              collection(db, "entitlements"),
-              where("parentId", "==", user.uid),
-              where("status", "==", "active")
-            )
-          ),
+          getActiveEntitlements(user.uid),
         ]);
 
         if (!alive) return;
 
         const now = Date.now();
 
-        const entList = entsSnap.docs
-          .map((d) => ({ id: d.id, ...(d.data() as any) }) as Entitlement)
-          // ważne “teraz”
-          .filter((e) => now >= Number(e.validFrom || 0) && now <= Number(e.validTo || 0));
+        const entList = entsSnap.filter((e) => now <= Number(e.validTo || 0));
 
         setChildren((profile?.children as Child[]) ?? []);
         setPlans(plansList ?? []);
@@ -177,21 +166,26 @@ export function CreditsByChildPanel({ refreshTick = 0 }: Props) {
           <CardTitle>Kredyty i subskrypcje</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Brak aktywnych pakietów/subskrypcji.
+          Brak aktywnych ani nadchodzących pakietów/subskrypcji.
         </CardContent>
       </Card>
     );
   }
 
   function EntRow({ e }: { e: Entitlement }) {
+    const now = Date.now();
     const plan = plansById.get(e.planId);
     const credits = e.limits?.credits;
     const unlimited = Boolean(credits?.unlimited);
     const amount = Number(credits?.amount || 0);
     const period = String(credits?.period || "month");
+    const isFuture = now < Number(e.validFrom || 0);
 
-    const periodKey = usageKeyForPeriod(period, Date.now());
-    const used = Number(e.usage?.credits?.[periodKey] || 0);
+    const currentPeriodKey = periodKeyFromTs(
+      period,
+      isFuture ? Number(e.validFrom || now) : now
+    );
+    const used = Number(e.usage?.credits?.[currentPeriodKey] || 0);
     const total = unlimited ? Infinity : amount;
     const remaining = unlimited ? Infinity : Math.max(0, amount - used);
 
@@ -214,7 +208,8 @@ export function CreditsByChildPanel({ refreshTick = 0 }: Props) {
 
           <div className="flex items-center gap-2 shrink-0">
             {card && <Badge variant={card === "GOLD" ? "default" : "secondary"}>{card}</Badge>}
-            <Badge variant="outline">{periodKey}</Badge>
+            {isFuture && <Badge variant="secondary">Aktywna od {fmtDate(e.validFrom)}</Badge>}
+            <Badge variant="outline">{currentPeriodKey}</Badge>
           </div>
         </div>
 

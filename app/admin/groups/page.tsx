@@ -7,7 +7,7 @@ import {
   createGroup,
   updateGroup,
   deleteGroup,
-} from "@/services/groups.service";
+} from "@/features/admin";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";

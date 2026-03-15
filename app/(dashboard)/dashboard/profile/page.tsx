@@ -7,7 +7,7 @@ import type { ParentFormData } from "@/types/profile";
 import {
   getUserProfile,
   updateUserProfile,
-} from "@/services/profile.service";
+} from "@/features/profile/children";
 
 export default function ProfilePage() {
   const { user } = useAuth();

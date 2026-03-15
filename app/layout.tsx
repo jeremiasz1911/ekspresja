@@ -2,8 +2,8 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
 export const metadata = {
-  title: "Platforma",
-  description: "Next.js + Firebase",
+  title: "Ekspresja.net - usługi artystyczne",
+  description: "Ekspresja - zajęcia umuzykalniające metodą Gordona i warsztaty muzyczne.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

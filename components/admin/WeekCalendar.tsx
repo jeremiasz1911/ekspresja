@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Class } from "@/types/classes";
-import { getActiveClasses } from "@/services/classes.service";
+import { getActiveClasses } from "@/features/admin";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CreateClassDialog } from "./CreateClassDialog";

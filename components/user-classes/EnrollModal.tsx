@@ -5,14 +5,15 @@ import type { Class, EnrollmentRequest } from "@/types";
 import { collection, getDocsFromServer, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
  
-import { usageKeyForPeriod } from "@/services/time";
+import { periodKeyFromTs } from "@/features/billing";
+import { consumeEnrollmentCredits } from "@/features/classes";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getParentProfile } from "@/services/user-profile.service";
+import { getParentProfile } from "@/features/profile/children";
 import {
   createEnrollmentRequest,
   getEnrollmentRequestForChild,
   withdrawEnrollmentRequest,
-} from "@/services/enrollment-requests.service";
+} from "@/features/classes";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -94,6 +95,8 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
 
   const [showCreditsUsage, setShowCreditsUsage] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [declarationAccepted, setDeclarationAccepted] = useState(false);
+  const [declarationNote, setDeclarationNote] = useState("");
 
   const selectedChildId = selectedChildIds[0] ?? null;
   const clickedMonth = monthOf(initialDateYMD);
@@ -150,7 +153,7 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
       if (!unlimited && total <= 0) return;
 
       // ✅ klucz okresu liczony z DATY KLIKNIĘTEGO TERMINU (a nie z "teraz")
-      const key = usageKeyForPeriod(period, baseTs);
+      const key = periodKeyFromTs(period, baseTs);
       const used = Number(data?.usage?.credits?.[key] || 0);
       const remaining = unlimited ? 999999 : Math.max(0, total - used);
 
@@ -176,6 +179,8 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
     setErrorMsg(null);
 
     getParentProfile(user.uid).then(async (profile) => {
+      setDeclarationAccepted(false);
+      setDeclarationNote("");
       const kids = profile?.children ?? [];
       setChildren(kids);
       setSelectedChildIds([]);
@@ -222,18 +227,12 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
   async function enrollWithCredits(childId: string, dates: string[]) {
     if (!user || !selectedClass) return;
     const token = await user.getIdToken();
-
-    const res = await fetch("/api/enrollments/consume", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ classId: selectedClass.id, childId, dates }),
+    const data = await consumeEnrollmentCredits({
+      token,
+      classId: selectedClass.id,
+      childId,
+      dates,
     });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.error || "CREDITS_ENROLL_FAILED");
 
     if (typeof data?.remaining === "number") setCreditsRemaining(data.remaining);
   }
@@ -252,6 +251,7 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
           childId: cid,
           classId: selectedClass.id,
           paymentMethod,
+          declarationNote: paymentMethod === "declaration" ? declarationNote : undefined,
         });
 
         const fresh = await getEnrollmentRequestForChild(cid, selectedClass.id);
@@ -426,6 +426,12 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
 
   const showCreditsInfo =
     selectedChildId && creditsLoadedForChild === selectedChildId && creditsRemaining !== null;
+  const blockedCreditDates = useMemo(() => {
+    if (!selectedChildId) return [];
+    const rs = requestStates[selectedChildId];
+    if (!rs || rs.state !== "loaded") return [];
+    return safeReqDates(rs.request);
+  }, [requestStates, selectedChildId]);
 
   return (
     <>
@@ -586,11 +592,54 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
             </label>
           </RadioGroup>
 
+          {paymentMethod === "declaration" && (
+            <div className="rounded-lg border bg-muted/30 px-3 py-3 space-y-2">
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  checked={declarationAccepted}
+                  onCheckedChange={(v) => setDeclarationAccepted(Boolean(v))}
+                />
+                <span>
+                  Potwierdzam deklarację uczestnictwa i zobowiązuję się do późniejszej płatności.
+                </span>
+              </label>
+              <textarea
+                value={declarationNote}
+                onChange={(e) => setDeclarationNote(e.target.value)}
+                placeholder="Notatka do deklaracji (opcjonalnie, np. forma i termin płatności)"
+                className="w-full min-h-20 rounded-md border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          )}
+
+          <div className="rounded-lg border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            {paymentMethod === "online" &&
+              "W kolejnym kroku wybierzesz plan i przejdziesz do bezpiecznej płatności online."}
+            {paymentMethod === "credits" &&
+              "W kolejnym kroku wybierzesz konkretne terminy, które chcesz zarezerwować kredytami."}
+            {paymentMethod === "cash" &&
+              "Wyślesz zgłoszenie, a płatność gotówką rozliczysz na zajęciach."}
+            {paymentMethod === "declaration" &&
+              "Wyślesz deklarację uczestnictwa bez natychmiastowej płatności online."}
+          </div>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button className="w-full" disabled={selectedChildIds.length === 0 || submitting || isPastClicked}>
+              <Button
+                className="w-full"
+                disabled={
+                  selectedChildIds.length === 0 ||
+                  submitting ||
+                  isPastClicked ||
+                  (paymentMethod === "declaration" && !declarationAccepted)
+                }
+              >
                 {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {paymentMethod === "credits" ? "Dalej (wybór terminów)" : "Wyślij zgłoszenie"}
+                {paymentMethod === "credits"
+                  ? "Dalej (wybór terminów)"
+                  : paymentMethod === "online"
+                  ? "Dalej (wybór planu i płatności)"
+                  : "Wyślij zgłoszenie"}
               </Button>
             </AlertDialogTrigger>
 
@@ -600,6 +649,10 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
                 <AlertDialogDescription>
                   {paymentMethod === "credits"
                     ? "Wybierzesz terminy do rezerwacji w kolejnym kroku."
+                    : paymentMethod === "online"
+                    ? "Wybierzesz plan i przejdziesz do płatności online."
+                    : paymentMethod === "declaration"
+                    ? "Wyślesz deklarację uczestnictwa i zapis trafi do weryfikacji."
                     : "Czy na pewno chcesz wysłać zgłoszenie?"}
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -657,6 +710,7 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
           selectedClass={selectedClass}
           creditsRemaining={creditsRemaining}
           initialDateYMD={initialDateYMD}
+          blockedDates={blockedCreditDates}
           onConfirm={(dates) => {
             setShowCreditsUsage(false);
             confirmCreditsEnroll(dates);

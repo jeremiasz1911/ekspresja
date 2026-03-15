@@ -24,6 +24,9 @@ export type EnrollmentRequest = {
 
   status: EnrollmentStatus;
   paymentMethod: PaymentMethod;
+  declarationAccepted?: boolean;
+  declarationAcceptedAt?: number;
+  declarationNote?: string;
 
   createdAt: number;
 };

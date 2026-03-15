@@ -1,7 +1,6 @@
 export * from "./admin";
 export * from "./auth";
 export * from "./children";
-export * from "./child";
 export * from "./classes";
 export * from "./classOccurrences";
 export * from "./groups";
@@ -12,3 +11,4 @@ export * from "./user";
 export * from "./events";
 export * from "./enrollments";
 export * from "./enrollment-request";
+export * from "./reservations";

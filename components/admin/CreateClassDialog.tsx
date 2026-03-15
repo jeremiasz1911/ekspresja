@@ -13,10 +13,10 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Class, RecurrenceType, ClassIcon } from "@/types/classes";
 import { Group } from "@/types/groups";
-import { createClass, updateClass, deleteClass } from "@/services/classes.service";
-import { uploadClassImage } from "@/services/upload.service";
+import { createClass, deleteClass, updateClass } from "@/features/admin";
+import { uploadClassImage } from "@/features/admin";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getAllGroups } from "@/services/groups.service";
+import { getAllGroups } from "@/features/admin";
 
 type Props = {
   mode: "create" | "edit";
