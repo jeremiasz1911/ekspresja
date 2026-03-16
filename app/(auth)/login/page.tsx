@@ -10,6 +10,15 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
+import { getUserRole } from "@/features/admin";
+
+function isAdminByEmail(email?: string | null) {
+  const list = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+  return !!email && list.includes(email.toLowerCase());
+}
 
 function mapFirebaseError(code?: string) {
   switch (code) {
@@ -30,12 +39,19 @@ function mapFirebaseError(code?: string) {
 function LoginPageContent() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/dashboard";
+  const next = search.get("next");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function resolveNextPath(uid: string, email?: string | null) {
+    if (next) return next;
+    const role = await getUserRole(uid);
+    if (role === "admin" || isAdminByEmail(email)) return "/dashboard";
+    return "/dashboard";
+  }
 
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -43,8 +59,8 @@ function LoginPageContent() {
     setError(null);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.replace(next);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      router.replace(await resolveNextPath(cred.user.uid, cred.user.email));
     } catch (err: any) {
       setError(mapFirebaseError(err?.code));
     } finally {
@@ -58,8 +74,8 @@ function LoginPageContent() {
 
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.replace(next);
+      const cred = await signInWithPopup(auth, provider);
+      router.replace(await resolveNextPath(cred.user.uid, cred.user.email));
     } catch (err: any) {
       setError(mapFirebaseError(err?.code));
     } finally {

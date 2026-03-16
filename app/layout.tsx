@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { UISettingsProvider } from "@/components/settings/UISettingsProvider";
 
 export const metadata = {
   title: "Ekspresja.net - usługi artystyczne",
@@ -10,7 +11,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pl">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <UISettingsProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </UISettingsProvider>
       </body>
     </html>
   );

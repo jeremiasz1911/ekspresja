@@ -5,6 +5,14 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getUserRole } from "@/features/admin";
 
+function isAdminByEmail(email?: string | null) {
+  const list = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+  return !!email && list.includes(email.toLowerCase());
+}
+
 export function AdminGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -20,7 +28,8 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
 
     getUserRole(user.uid)
       .then((role) => {
-        if (role !== "admin") {
+        const isAdmin = role === "admin" || isAdminByEmail(user.email);
+        if (!isAdmin) {
           router.replace("/dashboard");
         }
       })

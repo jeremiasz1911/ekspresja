@@ -31,9 +31,18 @@ export function PublicFooter() {
             <div><Link href="/regulamin">Regulamin platformy</Link></div>
           </div>
           <div className="mt-4 space-y-2 text-sm text-zinc-700">
-            <div className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> 504 939 965</div>
-            <div className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> antoninawenda@gmail.com</div>
-            <div className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> Jana Reutta 16A, Ciechanów</div>
+            <div className="inline-flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              <span>504 939 965</span>
+            </div>
+            <div className="inline-flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              <span>antoninawenda@gmail.com</span>
+            </div>
+            <div className="inline-flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <span>Jana Reutta 16A, Ciechanów</span>
+            </div>
           </div>
         </div>
         <div>
@@ -54,7 +63,7 @@ export function PublicFooter() {
         </div>
       </div>
       <div className="border-t py-4 text-center text-xs text-zinc-500">
-        © {new Date().getFullYear()} Ekspresja.net
+        © <span suppressHydrationWarning>{new Date().getFullYear()}</span> Ekspresja.net
       </div>
     </footer>
   );

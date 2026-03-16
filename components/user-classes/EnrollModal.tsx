@@ -436,7 +436,7 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => (!v ? onClose() : null)}>
-        <DialogContent className="max-w-2xl space-y-6">
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto space-y-6">
           <DialogHeader>
             <DialogTitle className="text-xl">Zapis na zajęcia</DialogTitle>
           </DialogHeader>
@@ -454,7 +454,7 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
               <p className="text-sm text-muted-foreground">{selectedClass.description}</p>
             )}
 
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 {weekdayLabel(selectedClass?.weekday)}
@@ -501,7 +501,7 @@ export function EnrollModal({ open, selectedClass, initialDateYMD = null, onClos
                 (rs.request.status === "pending" || rs.request.status === "approved");
 
               return (
-                <div key={c.id} className="flex items-center justify-between rounded-lg border px-4 py-2">
+                <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-2">
                   <label className="flex items-center gap-3">
                     <Checkbox
                       disabled={disabled}

@@ -47,7 +47,7 @@ export function UserMenu() {
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          className="text-red-600"
+          className="mt-1 w-full justify-start bg-red-100 text-red-800 hover:bg-red-200"
           onClick={() => signOut(auth)}
         >
           Wyloguj

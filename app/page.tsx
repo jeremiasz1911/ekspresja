@@ -326,9 +326,18 @@ export default function HomePage() {
             <h2 className="text-3xl font-black">Kontakt</h2>
             <p className="mt-3 text-white/90">Masz pytania o zajęcia? Napisz do nas przez formularz.</p>
             <div className="mt-5 space-y-2 text-sm text-white/90">
-              <div className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> 504 939 965</div>
-              <div className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> antoninawenda@gmail.com</div>
-              <div className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> Jana Reutta 16A, Ciechanów</div>
+              <div className="inline-flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                <span>504 939 965</span>
+              </div>
+              <div className="inline-flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                <span>antoninawenda@gmail.com</span>
+              </div>
+              <div className="inline-flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                <span>Jana Reutta 16A, Ciechanów</span>
+              </div>
             </div>
           </div>
           <div className="self-center rounded-3xl border border-white/30 bg-white/10 p-6 backdrop-blur-md">

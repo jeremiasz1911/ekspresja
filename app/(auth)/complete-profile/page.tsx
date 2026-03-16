@@ -7,7 +7,7 @@ import { ParentProfileForm } from "@/components/profile/ParentProfileForm";
 import type { ParentFormData } from "@/types/profile";
 import { createParentAndChildren } from "@/features/profile/children";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangleIcon } from "lucide-react"
+import { AlertTriangleIcon, Info } from "lucide-react"
 
 export default function CompleteProfilePage() {
   const { user } = useAuth();
@@ -54,6 +54,13 @@ export default function CompleteProfilePage() {
         <AlertTitle>Uzupełnij dane</AlertTitle>
         <AlertDescription>
           Aby korzystać z aplikacji, uzupełnij dane kontaktowe i dane dzieci.
+        </AlertDescription>
+      </Alert>
+      <Alert className="max-w-md border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-50">
+        <Info />
+        <AlertTitle>Logowanie Google</AlertTitle>
+        <AlertDescription>
+          Jeśli część informacji nie została pobrana z konta Google (np. telefon, adres, dane dzieci), wpisz je tutaj i zapisz profil.
         </AlertDescription>
       </Alert>
       <ParentProfileForm

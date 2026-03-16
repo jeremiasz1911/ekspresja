@@ -80,9 +80,13 @@ export default function GroupsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <div className="rounded-2xl border bg-white p-4 shadow-sm">
+        <h1 className="text-2xl font-semibold text-zinc-900">Grupy</h1>
+        <p className="mt-2 text-sm text-zinc-600">Zarządzanie grupami zajęciowymi i przypisaniami.</p>
+      </div>
+
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-semibold">Grupy</h1>
         <Button onClick={openCreate}>➕ Nowa grupa</Button>
       </div>
 

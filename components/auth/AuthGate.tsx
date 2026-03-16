@@ -9,6 +9,22 @@ import {
   getUserRole,
 } from "@/features/profile/children";
 
+type GuardSnapshot = {
+  role: string | null;
+  exists: boolean;
+  complete: boolean;
+};
+
+const guardCache = new Map<string, GuardSnapshot>();
+
+function isAdminByEmail(email?: string | null) {
+  const list = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+  return !!email && list.includes(email.toLowerCase());
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -62,44 +78,52 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    function applyGuard(snapshot: GuardSnapshot) {
+      // admin nie przechodzi przez complete-profile
+      if (snapshot.role === "admin" || isAdminByEmail(user?.email)) return;
+
+      // brak profilu -> complete-profile
+      if (!snapshot.exists) {
+        if (pathname !== "/complete-profile" && !redirectingRef.current) {
+          redirectingRef.current = true;
+          const next = `${pathname}${searchParams?.toString() ? `?${searchParams}` : ""}`;
+          router.replace(`/complete-profile?next=${encodeURIComponent(next)}`);
+        }
+        return;
+      }
+
+      // profil niekompletny -> complete-profile tylko gdy trasa wymaga profilu
+      if (!snapshot.complete && requiresProfile) {
+        if (pathname !== "/complete-profile" && !redirectingRef.current) {
+          redirectingRef.current = true;
+          const next = `${pathname}${searchParams?.toString() ? `?${searchParams}` : ""}`;
+          router.replace(`/complete-profile?next=${encodeURIComponent(next)}`);
+        }
+        return;
+      }
+
+      // profil kompletny -> blokuj wejście na complete-profile
+      if (snapshot.complete && pathname === "/complete-profile") {
+        router.replace("/dashboard");
+      }
+    }
+
     async function verify() {
-      setChecking(true);
-
       try {
+        const cached = guardCache.get(user!.uid);
+        if (cached) {
+          applyGuard(cached);
+          return;
+        }
+
+        setChecking(true);
         const role = await getUserRole(user!.uid);
-
-        // ✅ admin nie przechodzi przez complete-profile
-        if (role === "admin") return;
-
         const exists = await doesUserProfileExist(user!.uid);
+        const complete = exists ? await isProfileComplete(user!.uid) : false;
 
-        // 2) brak profilu -> complete-profile (z next)
-        if (!exists) {
-          if (pathname !== "/complete-profile" && !redirectingRef.current) {
-            redirectingRef.current = true;
-            const next = `${pathname}${searchParams?.toString() ? `?${searchParams}` : ""}`;
-            router.replace(`/complete-profile?next=${encodeURIComponent(next)}`);
-          }
-          return;
-        }
-
-        const complete = await isProfileComplete(user!.uid);
-
-        // 3) profil niekompletny -> complete-profile tylko gdy wchodzisz w strefę wymagającą profilu
-        if (!complete && requiresProfile) {
-          if (pathname !== "/complete-profile" && !redirectingRef.current) {
-            redirectingRef.current = true;
-            const next = `${pathname}${searchParams?.toString() ? `?${searchParams}` : ""}`;
-            router.replace(`/complete-profile?next=${encodeURIComponent(next)}`);
-          }
-          return;
-        }
-
-        // 4) profil kompletny -> blokuj wejście na complete-profile
-        if (complete && pathname === "/complete-profile") {
-          router.replace("/dashboard");
-          return;
-        }
+        const snapshot: GuardSnapshot = { role, exists, complete };
+        guardCache.set(user!.uid, snapshot);
+        applyGuard(snapshot);
       } finally {
         setChecking(false);
       }

@@ -148,15 +148,13 @@ export default function AdminUsersPage() {
   if (loading) return <div className="p-6">Ładowanie…</div>;
 
   return (
-    <div className="space-y-4 p-6">
-      <div className="flex items-end justify-between gap-3 flex-wrap">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Użytkownicy</h1>
-          <div className="text-sm text-muted-foreground">
-            Łącznie: {users.length} • Widoczne: {filtered.length}
-          </div>
+    <div className="space-y-4">
+      <section className="rounded-2xl border bg-white p-4 shadow-sm">
+        <h1 className="text-2xl font-semibold text-zinc-900">Użytkownicy</h1>
+        <div className="mt-2 text-sm text-zinc-600">
+          Łącznie: {users.length} • Widoczne: {filtered.length}
         </div>
-      </div>
+      </section>
 
       {/* Toolbar */}
       <div className="flex flex-wrap gap-2 items-center">

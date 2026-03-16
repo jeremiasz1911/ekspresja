@@ -175,7 +175,7 @@ export function CreateClassDialog({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === "edit" ? "Edytuj zajęcia" : "Dodaj zajęcia"}</DialogTitle>
         </DialogHeader>

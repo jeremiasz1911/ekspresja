@@ -7,6 +7,7 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import type { ChildInput } from "@/types/auth";
 import { createParentAndChildren } from "@/features/profile/children";
+import { Sparkles, UserRoundPlus } from "lucide-react";
 
 function emptyChild(): ChildInput {
   return { firstName: "", lastName: "", ageYears: "" };
@@ -155,7 +156,16 @@ export default function RegisterPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Rejestracja rodzica</h1>
+      <div className="rounded-2xl border bg-zinc-50 p-4">
+        <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs text-zinc-600">
+          <Sparkles className="h-3.5 w-3.5" />
+          Konto rodzica
+        </div>
+        <h1 className="mt-2 text-2xl font-semibold">Rejestracja rodzica</h1>
+        <p className="mt-1 text-sm text-zinc-600">
+          Uzupełnij dane, aby od razu zarządzać dziećmi, płatnościami i kalendarzem zajęć.
+        </p>
+      </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
         {/* Rodzic */}
@@ -193,6 +203,7 @@ export default function RegisterPage() {
               type="email"
               required
             />
+            <p className="mt-1 text-xs text-gray-500">Na ten adres wyślemy potwierdzenia i informacje o zajęciach.</p>
           </div>
 
           <div>
@@ -206,7 +217,7 @@ export default function RegisterPage() {
               minLength={6}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Minimum 6 znaków.
+              Minimum 6 znaków, najlepiej litery + cyfry.
             </p>
           </div>
 
@@ -218,6 +229,7 @@ export default function RegisterPage() {
               onChange={(e) => setPhone(e.target.value)}
               required
             />
+            <p className="mt-1 text-xs text-gray-500">Numer kontaktowy do spraw organizacyjnych.</p>
           </div>
 
           <div>
@@ -286,9 +298,10 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={addChild}
-              className="border rounded-lg px-3 py-2"
+              className="inline-flex items-center gap-2 border rounded-lg px-3 py-2"
             >
-              ➕ Dodaj dziecko
+              <UserRoundPlus className="h-4 w-4" />
+              Dodaj dziecko
             </button>
           </div>
 
@@ -394,6 +407,9 @@ export default function RegisterPage() {
         <Link className="underline" href="/login">
           Zaloguj się
         </Link>
+      </p>
+      <p className="text-xs text-center text-zinc-500">
+        Logujesz się przez Google? Jeśli jakieś dane nie pobiorą się automatycznie, uzupełnisz je w kolejnym kroku.
       </p>
     </div>
   );

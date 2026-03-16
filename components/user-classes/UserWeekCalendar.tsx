@@ -353,8 +353,9 @@ export function UserWeekCalendar({ refreshTick = 0 }: { refreshTick?: number }) 
         </div>
       )}
 
+      <div className="overflow-x-auto rounded-xl border bg-background">
       <div
-        className="relative border rounded-xl bg-background overflow-hidden"
+        className="relative min-w-[980px]"
         style={{
           display: "grid",
           gridTemplateColumns: "80px repeat(7, minmax(0, 1fr))",
@@ -414,6 +415,7 @@ export function UserWeekCalendar({ refreshTick = 0 }: { refreshTick?: number }) 
           </button>
         )})}
 
+      </div>
       </div>
 
       <EnrollModal

@@ -185,7 +185,7 @@ export function CreditsUsageModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => (!v ? onClose() : null)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Jak wykorzystać kredyty?</DialogTitle>
         </DialogHeader>

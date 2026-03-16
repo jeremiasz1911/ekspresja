@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Class } from "@/types/classes";
-import { getActiveClasses } from "@/features/admin";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -111,8 +110,14 @@ export function PublicWeekCalendar() {
 
   useEffect(() => {
     setLoading(true);
-    getActiveClasses()
+    fetch("/api/public/classes", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Nie udało się pobrać zajęć.");
+        const data = (await res.json()) as { classes?: Class[] };
+        return data.classes ?? [];
+      })
       .then(setClasses)
+      .catch(() => setClasses([]))
       .finally(() => setLoading(false));
   }, []);
 
@@ -156,8 +161,9 @@ export function PublicWeekCalendar() {
         <div className="text-sm text-muted-foreground">{loading ? "Ładowanie…" : `Zajęć: ${events.length}`}</div>
       </div>
 
+      <div className="overflow-x-auto rounded-xl border bg-background">
       <div
-        className="relative overflow-hidden rounded-xl border bg-background"
+        className="relative min-w-[900px]"
         style={{
           display: "grid",
           gridTemplateColumns: "70px repeat(7, minmax(0, 1fr))",
@@ -212,6 +218,7 @@ export function PublicWeekCalendar() {
             <div className="opacity-80 leading-tight">{ev.startTime}–{ev.endTime}</div>
           </button>
         ))}
+      </div>
       </div>
 
       <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
