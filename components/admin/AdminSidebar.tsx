@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { CalendarDays, Bell, LayoutDashboard, Layers, Megaphone, MessageCircle, PanelLeftClose, ShieldCheck, Users } from "lucide-react";
+import { BookOpenText, CalendarDays, Bell, LayoutDashboard, Layers, Megaphone, MessageCircle, PanelLeftClose, ShieldCheck, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAdminRealtime } from "./AdminRealtimeProvider";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 const nav = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Zajęcia", href: "/admin/classes", icon: CalendarDays },
+  { label: "E-materiały", href: "/admin/materials", icon: BookOpenText },
   { label: "Użytkownicy", href: "/admin/users", icon: Users },
   { label: "Plany", href: "/admin/plans", icon: ShieldCheck },
   { label: "Grupy", href: "/admin/groups", icon: Layers },

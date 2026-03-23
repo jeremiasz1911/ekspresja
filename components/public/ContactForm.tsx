@@ -66,7 +66,7 @@ export function ContactForm({ compact = false }: { compact?: boolean }) {
         required
       />
       <button
-        className="rounded-xl border border-white/60 bg-gradient-to-r from-fuchsia-500 via-violet-500 to-cyan-500 px-5 py-3 font-semibold text-white shadow-lg disabled:opacity-60"
+        className="rounded-xl border border-white/60 bg-gradient-to-r from-fuchsia-500 via-violet-500 hover:cursor-pointer to-cyan-500 px-5 py-3 font-semibold text-white shadow-lg hover:bg-gradient-to-r hover:from-fuchsia-400 hover:via-violet-400 hover:to-cyan-400 hover:scale-[1.02] transition-transform"
         disabled={sending}
       >
         {sending ? "Wysyłanie..." : "Wyślij wiadomość"}

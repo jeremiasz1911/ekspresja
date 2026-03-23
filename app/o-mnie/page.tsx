@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNav } from "@/components/public/PublicNav";
+import { PublicPageHeader } from "@/components/public/PublicPageHeader";
 import { Baby, MicVocal, Music2, Piano } from "lucide-react";
 
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-white text-zinc-900">
       <PublicNav />
-      <section className="relative h-[46vh] min-h-[340px] overflow-hidden">
+      <section className="relative h-[48vh] min-h-[360px] overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=2200&q=80"
           alt="Antonina Wiśniewska-Wenda"
@@ -24,7 +25,10 @@ export default function AboutPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-12">
-        <h1 className="hero-gradient text-4xl font-black md:text-5xl">Antonina Wiśniewska-Wenda</h1>
+        <PublicPageHeader
+          title="Antonina Wiśniewska-Wenda"
+          description="Muzyka, relacja i rozwój dzieci przez zajęcia artystyczne."
+        />
         <p className="mt-5 text-zinc-700">
           Mama Eli i Jasia, wokalistka oraz instrumentalistka (skrzypce, fortepian), prowadząca zajęcia dla
           dzieci i rodzin z dużą uważnością na emocje, relację i rozwój muzyczny.

@@ -88,11 +88,12 @@ function LoginPageContent() {
       {/* Logo */}
       <div className="flex flex-col items-center gap-2">
         <Image
-          src="/logo.png"
-          alt="Logo"
-          width={640}
-          height={640}
+          src="/logoEkspresja.png"
+          alt="Ekspresja.net"
+          width={420}
+          height={120}
           priority
+          className="h-auto w-full max-w-[240px] object-contain sm:max-w-[300px]"
         />
         <h1 className="text-2xl font-semibold">Zaloguj się</h1>
         <p className="text-sm text-gray-500">

@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNav } from "@/components/public/PublicNav";
+import { PublicPageHeader } from "@/components/public/PublicPageHeader";
 import { Music2, Sparkles, Users } from "lucide-react";
 
 export default function OfferPage() {
   return (
     <main className="min-h-screen bg-white text-zinc-900">
       <PublicNav />
-      <section className="relative h-[52vh] min-h-[380px] overflow-hidden">
+      <section className="relative h-[48vh] min-h-[360px] overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=2000&q=80"
           alt="Oferta zajęć muzycznych"
@@ -25,6 +26,10 @@ export default function OfferPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-14">
+        <PublicPageHeader
+          title="Oferta zajęć"
+          description="Zajęcia dla dzieci, młodzieży i dorosłych — od Gordonków po warsztaty muzyczne i naukę instrumentów."
+        />
         <div className="grid gap-8 md:grid-cols-2">
           <div className="space-y-4">
             <h2 className="text-3xl font-black">1. Zajęcia Gordonowskie (0-3)</h2>

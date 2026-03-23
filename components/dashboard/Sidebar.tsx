@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { CalendarDays, CreditCard, Home, Megaphone, MessageCircleMore, Settings, UserRoundCog, Users } from "lucide-react";
+import { BookOpenText, CalendarDays, CreditCard, Home, Megaphone, MessageCircleMore, Settings, UserRoundCog, Users } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Badge } from "@/components/ui/badge";
 import { db } from "@/lib/firebase/client";
@@ -18,6 +18,7 @@ const nav = [
   { label: "Aktualności", href: "/dashboard/announcements", icon: Megaphone },
   { label: "Profil", href: "/dashboard/profile", icon: UserRoundCog },
   { label: "Zajęcia", href: "/dashboard/classes", icon: CalendarDays },
+  { label: "E-materiały", href: "/dashboard/materials", icon: BookOpenText },
   { label: "Płatności", href: "/dashboard/payments", icon: CreditCard },
   { label: "Dzieci", href: "/dashboard/children", icon: Users },
   { label: "Ustawienia", href: "/dashboard/settings", icon: Settings },
