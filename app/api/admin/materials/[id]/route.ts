@@ -35,7 +35,7 @@ async function requireAdminUid(req: Request): Promise<string | null> {
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const adminUid = await requireAdminUid(req);
@@ -43,13 +43,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const materialId = String(params?.id || "").trim();
+    const { id } = await params;
+    const materialId = String(id || "").trim();
+
     if (!materialId) {
       return NextResponse.json({ error: "Missing material id" }, { status: 400 });
     }
 
     const ref = adminDb.collection("materials").doc(materialId);
     const snap = await ref.get();
+
     if (!snap.exists) {
       return NextResponse.json({ error: "Material not found" }, { status: 404 });
     }
