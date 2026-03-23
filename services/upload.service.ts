@@ -13,3 +13,17 @@ export async function uploadClassImage(
 
   return getDownloadURL(storageRef);
 }
+
+export async function uploadMaterialAsset(
+  file: File,
+  materialId: string
+): Promise<{ storagePath: string; downloadUrl: string }> {
+  const ext = file.name.split(".").pop();
+  const storagePath = `materials/${materialId}/asset.${ext}`;
+
+  const storageRef = ref(storage, storagePath);
+  await uploadBytes(storageRef, file);
+
+  const downloadUrl = await getDownloadURL(storageRef);
+  return { storagePath, downloadUrl };
+}

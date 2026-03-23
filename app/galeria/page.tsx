@@ -3,6 +3,7 @@
 import { PublicNav } from "@/components/public/PublicNav";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { useEffect, useState } from "react";
+import { PublicPageHeader } from "@/components/public/PublicPageHeader";
 
 const gallery = [
   "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1200&q=80",
@@ -24,7 +25,7 @@ export default function GalleryPage() {
   return (
     <main className="min-h-screen bg-white text-zinc-900">
       <PublicNav />
-      <section className="relative h-[50vh] min-h-[340px] overflow-hidden">
+      <section className="relative h-[48vh] min-h-[360px] overflow-hidden">
         {gallery.map((src, i) => (
           <img
             key={src}
@@ -45,6 +46,7 @@ export default function GalleryPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-12">
+        <PublicPageHeader title="Galeria" description="Momenty z zajęć i muzycznej atmosfery Ekspresji." />
         <p className="text-sm text-zinc-500">Zdjęcia poglądowe: Unsplash.</p>
         <div className="mt-6 columns-1 gap-4 space-y-4 md:columns-3">
           {gallery.concat(gallery.slice(0, 3)).map((src, i) => (

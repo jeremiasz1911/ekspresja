@@ -1,8 +1,18 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import type { ParentFormData } from "@/types/profile";
 import type { ChildInput } from "@/types/auth";
-import { Baby, Cake, CalendarCheck2, CreditCard, PencilLine, UserRound } from "lucide-react";
+import {
+  Baby,
+  Cake,
+  CalendarCheck2,
+  CreditCard,
+  Mail,
+  MapPin,
+  PencilLine,
+  Phone,
+  UserRound,
+} from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -192,57 +202,72 @@ export function ParentProfileForm({
         </h2>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Input
-            placeholder="Imię *"
-            value={form.firstName}
-            onChange={(e) => update("firstName", e.target.value)}
-            onBlur={() => touch("firstName")}
-            className={
-              errors.firstName && touched.firstName ? "border-red-500" : ""
-            }
-          />
+          <div className="space-y-1">
+            <FieldLabel icon={UserRound} label="Imię" required />
+            <Input
+              placeholder="Imię *"
+              value={form.firstName}
+              onChange={(e) => update("firstName", e.target.value)}
+              onBlur={() => touch("firstName")}
+              className={
+                errors.firstName && touched.firstName ? "border-red-500" : ""
+              }
+            />
+          </div>
 
+          <div className="space-y-1">
+            <FieldLabel icon={UserRound} label="Nazwisko" required />
+            <Input
+              placeholder="Nazwisko *"
+              value={form.lastName}
+              onChange={(e) => update("lastName", e.target.value)}
+              onBlur={() => touch("lastName")}
+              className={
+                errors.lastName && touched.lastName ? "border-red-500" : ""
+              }
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <FieldLabel icon={Mail} label="Email" required />
           <Input
-            placeholder="Nazwisko *"
-            value={form.lastName}
-            onChange={(e) => update("lastName", e.target.value)}
-            onBlur={() => touch("lastName")}
+            placeholder="Email *"
+            value={form.email}
+            onChange={(e) => update("email", e.target.value)}
+            disabled={mode !== "edit"}
+            onBlur={() => touch("email")}
             className={
-              errors.lastName && touched.lastName ? "border-red-500" : ""
+              errors.email && touched.email ? "border-red-500" : ""
             }
           />
         </div>
 
-        <Input
-          placeholder="Email *"
-          value={form.email}
-          onChange={(e) => update("email", e.target.value)}
-          disabled={mode !== "edit"}
-          onBlur={() => touch("email")}
-          className={
-            errors.email && touched.email ? "border-red-500" : ""
-          }
-        />
+        <div className="space-y-1">
+          <FieldLabel icon={Phone} label="Telefon" required />
+          <Input
+            placeholder="Telefon *"
+            value={form.phone}
+            onChange={(e) => update("phone", e.target.value)}
+            onBlur={() => touch("phone")}
+            className={
+              errors.phone && touched.phone ? "border-red-500" : ""
+            }
+          />
+        </div>
 
-        <Input
-          placeholder="Telefon *"
-          value={form.phone}
-          onChange={(e) => update("phone", e.target.value)}
-          onBlur={() => touch("phone")}
-          className={
-            errors.phone && touched.phone ? "border-red-500" : ""
-          }
-        />
-
-        <Input
-          placeholder="Ulica"
-          value={form.street}
-          onChange={(e) => update("street", e.target.value)}
-          onBlur={() => touch("street")}
-          className={
-            errors.street && touched.street ? "border-red-500" : ""
-          }
-        />
+        <div className="space-y-1">
+          <FieldLabel icon={MapPin} label="Ulica" />
+          <Input
+            placeholder="Ulica"
+            value={form.street}
+            onChange={(e) => update("street", e.target.value)}
+            onBlur={() => touch("street")}
+            className={
+              errors.street && touched.street ? "border-red-500" : ""
+            }
+          />
+        </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
@@ -336,36 +361,45 @@ export function ParentProfileForm({
             ) : null}
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Input
-                placeholder="Imię *"
-                value={child.firstName}
-                onChange={(e) =>
-                  updateChild(idx, { firstName: e.target.value })
-                }
-              />
+              <div className="space-y-1">
+                <FieldLabel icon={Baby} label="Imię dziecka" required />
+                <Input
+                  placeholder="Imię *"
+                  value={child.firstName}
+                  onChange={(e) =>
+                    updateChild(idx, { firstName: e.target.value })
+                  }
+                />
+              </div>
 
-              <Input
-                placeholder="Nazwisko *"
-                value={child.lastName}
-                onChange={(e) =>
-                  updateChild(idx, { lastName: e.target.value })
-                }
-              />
+              <div className="space-y-1">
+                <FieldLabel icon={Baby} label="Nazwisko dziecka" required />
+                <Input
+                  placeholder="Nazwisko *"
+                  value={child.lastName}
+                  onChange={(e) =>
+                    updateChild(idx, { lastName: e.target.value })
+                  }
+                />
+              </div>
 
-              <Input
-                type="number"
-                min={1}
-                placeholder="Wiek *"
-                value={child.ageYears}
-                onChange={(e) =>
-                  updateChild(idx, {
-                    ageYears:
-                      e.target.value === ""
-                        ? ""
-                        : Number(e.target.value),
-                  })
-                }
-              />
+              <div className="space-y-1">
+                <FieldLabel icon={Cake} label="Wiek" required />
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="Wiek *"
+                  value={child.ageYears}
+                  onChange={(e) =>
+                    updateChild(idx, {
+                      ageYears:
+                        e.target.value === ""
+                          ? ""
+                          : Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
             </div>
           </div>
         ))}
@@ -425,6 +459,24 @@ export function ParentProfileForm({
         </DialogContent>
       </Dialog>
     </form>
+  );
+}
+
+function FieldLabel({
+  icon: Icon,
+  label,
+  required,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  required?: boolean;
+}) {
+  return (
+    <p className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-600">
+      <Icon className="h-3.5 w-3.5 text-zinc-500" />
+      {label}
+      {required ? <span className="text-rose-600">*</span> : null}
+    </p>
   );
 }
 

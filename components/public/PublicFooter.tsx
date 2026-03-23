@@ -31,18 +31,18 @@ export function PublicFooter() {
             <div><Link href="/regulamin">Regulamin platformy</Link></div>
           </div>
           <div className="mt-4 space-y-2 text-sm text-zinc-700">
-            <div className="inline-flex items-center gap-2">
-              <Phone className="h-4 w-4" />
-              <span>504 939 965</span>
-            </div>
-            <div className="inline-flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              <span>antoninawenda@gmail.com</span>
-            </div>
-            <div className="inline-flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              <span>Jana Reutta 16A, Ciechanów</span>
-            </div>
+             <div onClick={() => window.location.href = 'tel:504939965'} className="hover:scale-105 hover:cursor-pointer inline-flex items-center gap-2">
+                <Phone className="h-4 w-4 " />
+                <span className="mr-4">504 939 965</span>
+              </div>
+              <div onClick={() => window.location.href = 'mailto:antoninawenda@gmail.com'} className="hover:scale-105 hover:cursor-pointer inline-flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                <span className="mr-4">antoninawenda@gmail.com</span>
+              </div>
+              <div onClick={() => window.location.href = 'https://www.google.com/maps/place/Jana+Reutta+16A,+06-500+Ciechanów/@52.180000,21.000000,15z/data=!4m2!3m1!1s0x471a7d8c8c8c8c8c:0x471a7d8c8c8c8c8c?hl=pl'} className="hover:scale-105 hover:cursor-pointer inline-flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                <span>Jana Reutta 16A, 06-500 Ciechanów</span>
+              </div>
           </div>
         </div>
         <div>

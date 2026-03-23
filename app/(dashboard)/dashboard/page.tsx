@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getChildrenForParent } from "@/features/profile/children";
 import { getActiveEntitlements } from "@/features/billing";
+import { getMaterialsForParent } from "@/features/materials";
 import { getActiveClasses, getParentReservationsInRange, type Reservation } from "@/features/classes";
-import { CalendarClock, CreditCard, Users, UserRoundCog, Sparkles, LogOut } from "lucide-react";
+import { BookOpenText, CalendarClock, CreditCard, Users, UserRoundCog, Sparkles, LogOut } from "lucide-react";
 
 type ParentChild = {
   id: string;
@@ -50,6 +51,11 @@ export default function DashboardPage() {
   const [entitlements, setEntitlements] = useState<Array<{ id: string; type: string; validTo: number }>>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [classes, setClasses] = useState<ParentClass[]>([]);
+  const [materialsInfo, setMaterialsInfo] = useState<{
+    availableCount: number;
+    lockedCount: number;
+    materialsAccess: "none" | "partial" | "all";
+  } | null>(null);
   const [latestAnnouncement, setLatestAnnouncement] = useState<{
     title?: string;
     content?: string;
@@ -105,14 +111,20 @@ export default function DashboardPage() {
         toYMD: toYMD(to),
       }),
       getActiveClasses(),
+      getMaterialsForParent(user.uid),
       getDocs(query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(10))),
     ])
-      .then(([childRows, entitlementRows, reservationRows, classRows, announcementsSnap]) => {
+      .then(([childRows, entitlementRows, reservationRows, classRows, materialsRows, announcementsSnap]) => {
         const activeChildren = (childRows as ParentChild[]).filter((c) => c.active !== false);
         setChildren(activeChildren);
         setEntitlements(entitlementRows.map((e) => ({ id: e.id, type: e.type, validTo: e.validTo })));
         setReservations(reservationRows);
         setClasses(classRows.map((c) => ({ id: c.id, title: c.title })));
+        setMaterialsInfo({
+          availableCount: materialsRows.available.length,
+          lockedCount: materialsRows.locked.length,
+          materialsAccess: materialsRows.materialsAccess,
+        });
         const latest = announcementsSnap.docs
           .map((d) => d.data() as { title?: string; content?: string; createdAt?: number; isActive?: boolean; variant?: string })
           .find((a) => a.isActive !== false);
@@ -203,7 +215,7 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-3xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
           <div className="hero-gradient-icon mb-3 inline-flex rounded-xl p-2 text-white">
             <CreditCard className="h-5 w-5" />
@@ -233,6 +245,19 @@ export default function DashboardPage() {
           <p className="text-sm text-zinc-500">Najbliższe opłacone zajęcia</p>
           <p className="mt-1 text-xl font-bold">{loading ? "..." : upcomingPaid.length}</p>
           <p className="mt-2 text-sm text-zinc-600">Tylko aktywne i opłacone terminy.</p>
+        </div>
+
+        <div className="rounded-3xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+          <div className="hero-gradient-icon mb-3 inline-flex rounded-xl p-2 text-white">
+            <BookOpenText className="h-5 w-5" />
+          </div>
+          <p className="text-sm text-zinc-500">E-materiały</p>
+          <p className="mt-1 text-xl font-bold">{loading ? "..." : materialsInfo?.availableCount ?? 0}</p>
+          <p className="mt-2 text-sm text-zinc-600">
+            {materialsInfo
+              ? `Dostęp: ${materialsInfo.materialsAccess.toUpperCase()} • Zablokowane: ${materialsInfo.lockedCount}`
+              : "Brak danych o bibliotece materiałów."}
+          </p>
         </div>
       </section>
 
@@ -287,6 +312,12 @@ export default function DashboardPage() {
               <Button variant="outline" className="w-full justify-start">
                 <CreditCard className="mr-2 h-4 w-4" />
                 Płatności i plany
+              </Button>
+            </Link>
+            <Link href="/dashboard/materials">
+              <Button variant="outline" className="w-full justify-start">
+                <BookOpenText className="mr-2 h-4 w-4" />
+                Przeglądaj e-materiały
               </Button>
             </Link>
             <Button variant="destructive" className="mt-1 w-full justify-start bg-red-100 text-red-800 hover:bg-red-200" onClick={() => signOut(auth)}>

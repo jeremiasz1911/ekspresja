@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
@@ -157,6 +158,14 @@ export default function RegisterPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border bg-zinc-50 p-4">
+        <Image
+          src="/logoEkspresja.png"
+          alt="Ekspresja.net"
+          width={420}
+          height={120}
+          priority
+          className="mb-3 h-auto w-full max-w-[220px] object-contain sm:max-w-[280px]"
+        />
         <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs text-zinc-600">
           <Sparkles className="h-3.5 w-3.5" />
           Konto rodzica

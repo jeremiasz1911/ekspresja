@@ -17,6 +17,14 @@ type GuardSnapshot = {
 
 const guardCache = new Map<string, GuardSnapshot>();
 
+export function invalidateAuthGateCache(uid?: string) {
+  if (uid) {
+    guardCache.delete(uid);
+    return;
+  }
+  guardCache.clear();
+}
+
 function isAdminByEmail(email?: string | null) {
   const list = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
     .split(",")

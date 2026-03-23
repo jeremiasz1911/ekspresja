@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNav } from "@/components/public/PublicNav";
+import { PublicPageHeader } from "@/components/public/PublicPageHeader";
 
 const items = [
   { title: "Gordonki 0-3", href: "/oferta", tags: ["gordonki", "niemowlęta", "umuzykalnianie"] },
@@ -30,7 +31,7 @@ export default async function SearchPage({
     <main className="min-h-screen bg-white text-zinc-900">
       <PublicNav />
       <section className="mx-auto max-w-5xl px-6 py-12">
-        <h1 className="hero-gradient text-4xl font-black md:text-5xl">Szukaj</h1>
+        <PublicPageHeader title="Szukaj" description="Wyszukaj zajęcia i informacje na stronie." compact />
         <form action="/szukaj" className="mt-6 flex gap-2">
           <input
             name="q"
