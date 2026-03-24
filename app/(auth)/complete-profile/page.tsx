@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { invalidateAuthGateCache } from "@/components/auth/AuthGate";
@@ -12,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { AlertTriangleIcon, CheckCircle2, Info, Sparkles } from "lucide-react";
 
-export default function CompleteProfilePage() {
+function CompleteProfileContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,16 +27,13 @@ export default function CompleteProfilePage() {
     lastName,
     email: user.email ?? "",
     phone: "",
-
     street: "",
     houseNumber: "",
     apartmentNumber: "",
     postalCode: "",
     city: "",
-
     children: [{ firstName: "", lastName: "", ageYears: "" }],
   };
-
 
   async function handleSubmit(data: ParentFormData) {
     await createParentAndChildren({
@@ -47,7 +45,6 @@ export default function CompleteProfilePage() {
       children: data.children,
     });
 
-    // Po zapisie odświeżamy cache guarda, aby nie trzymał starego stanu "profil niekompletny".
     invalidateAuthGateCache(user!.uid);
 
     const next = searchParams.get("next");
@@ -64,7 +61,9 @@ export default function CompleteProfilePage() {
               <Sparkles className="h-3.5 w-3.5" />
               Ostatni krok konfiguracji konta
             </div>
-            <CardTitle className="text-2xl font-bold text-zinc-900">Uzupełnij profil</CardTitle>
+            <CardTitle className="text-2xl font-bold text-zinc-900">
+              Uzupełnij profil
+            </CardTitle>
             <p className="text-sm text-zinc-600">
               Po zapisaniu danych od razu przejdziesz do panelu i zapisów na zajęcia.
             </p>
@@ -130,5 +129,13 @@ export default function CompleteProfilePage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function CompleteProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-50" />}>
+      <CompleteProfileContent />
+    </Suspense>
   );
 }
