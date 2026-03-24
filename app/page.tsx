@@ -408,7 +408,7 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="mt-4 px-3 text-center text-xs font-medium text-zinc-600 md:text-sm">
-                Edwin E. Gordon, autor metody wspierającej naturalny rozwój muzykalności dziecka.
+                Antonina Wiśniewska-Wenda i Edwin E. Gordon, autor metody wspierającej naturalny rozwój muzykalności dziecka.
               </p>
             </aside>
           </div>
